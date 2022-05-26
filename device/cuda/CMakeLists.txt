@@ -36,6 +36,18 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/seeding/spacepoint_binning.cu"
   "src/seeding/triplet_finding.cu"
   "src/cca/component_connection.cu"
+  # sparseCCL clusterization headers
+  "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
+  "src/clusterization/cluster_counting.hpp"
+  "src/clusterization/clusters_sum.hpp"
+  "src/clusterization/component_connection.hpp"
+  "src/clusterization/measurements_creation.hpp"
+  # sparseCCL clusterization code
+  "src/clusterization/clusterization_algorithm.cpp"
+  "src/clusterization/cluster_counting.cu"
+  "src/clusterization/clusters_sum.cu"
+  "src/clusterization/component_connection.cu"
+  "src/clusterization/measurements_creation.cu"
 )
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )

@@ -18,6 +18,8 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+// new
+#include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -50,6 +52,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_modules = 0;
     // uint64_t n_clusters = 0;
     uint64_t n_measurements = 0;
+    uint64_t n_measurements_cuda = 0; //new
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_seeds_cuda = 0;
@@ -60,7 +63,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     float clusterization_cpu(0);
     float sp_formation_cpu(0);
     float seeding_cpu(0);
-    // float clusterization_cuda(0);
+    float clusterization_cuda(0); //new
     float seeding_cuda(0);
     float tp_estimating_cpu(0);
     float tp_estimating_cuda(0);
@@ -76,6 +79,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
     traccc::cuda::track_params_estimation tp_cuda(mng_mr);
+    traccc::cuda::clusterization_algorithm ca_cuda(mng_mr); //new
+
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -116,6 +121,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
+
+        //new
+        auto measurements_per_event_cuda = ca_cuda(cells_per_event);
+        
         /*---------------------------------
                Spacepoint formation (cpu)
           ---------------------------------*/
