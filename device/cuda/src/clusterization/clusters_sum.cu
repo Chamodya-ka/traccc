@@ -1,11 +1,12 @@
 #include "clusters_sum.hpp"
+#include "traccc/cuda/utils/definitions.hpp"
 
 namespace traccc::cuda {
 namespace kernels {
 __global__ void clusters_sum(
     cell_container_types::const_view cells_view,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    unsigned int& total_clusters,
+    unsigned int &total_clusters,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view)
     {
@@ -31,14 +32,15 @@ __global__ void clusters_sum(
                 device_sparse_ccl_indices(sparse_ccl_indices_view);
             auto cluster_indices =
                 device_sparse_ccl_indices.at(idx);
-
             // Run the sparse_ccl algorithm
+            printf("h1");
             detail::sparse_ccl(cells, cluster_indices, n_clusters);
+            printf("h2");
 
             // Save the number of clusters found in this module at
             // the last, extra place in the indices vectors
             cluster_indices.back() = n_clusters;
-
+            
             auto prefix_sum =
                 vecmem::device_atomic_ref<unsigned int>(
                     total_clusters)
@@ -64,7 +66,7 @@ __global__ void clusters_sum(
 void clusters_sum(
     const cell_container_types::host& cells_per_event,
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view,
-    unsigned int& total_clusters,
+    unsigned int total_clusters,
     vecmem::data::vector_view<std::size_t> cluster_prefix_sum_view,
     vecmem::data::vector_view<std::size_t> clusters_per_module_view,
     vecmem::memory_resource& resource) {
@@ -72,20 +74,21 @@ void clusters_sum(
 
     // Execution size of the algorithm
     std::size_t n_modules = cells_per_event.size();
-    auto wGroupSize = 64;
     // Calculate the execution NDrange for the kernel
-    const unsigned int nClustersSumThreads = wGroupSize;
-    const unsigned int nDClustersSumBlocks = (n_modules + wGroupSize - 1) / wGroupSize;
+    const unsigned int nClustersSumThreads = 64;
+    const unsigned int nDClustersSumBlocks = (n_modules + nClustersSumThreads - 1) / nClustersSumThreads;
 
-
+    
     // Get the view of the cells container
     auto cells_data = get_data(cells_per_event, &resource);
     cell_container_types::const_view cells_view(cells_data);
-
     // Launch clusters_sum kernel
-    kernels::clusters_sum<<<nClustersSumThreads,nDClustersSumBlocks>>>
+    kernels::clusters_sum<<<nDClustersSumBlocks,nClustersSumThreads>>>
         (cells_view,sparse_ccl_indices_view,total_clusters,
-        cluster_prefix_sum_view,clusters_per_module_view);                             
+        cluster_prefix_sum_view,clusters_per_module_view);  
+    CUDA_ERROR_CHECK(cudaPeekAtLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());     
+    printf("5\n")   ;           
     }
-
+    
 } //namespace traccc::cuda

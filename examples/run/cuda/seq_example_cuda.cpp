@@ -43,10 +43,10 @@ namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
-
+                
+    
     // Read the surface transforms
-    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
-
+    auto surface_transforms = traccc::read_geometry(i_cfg.detector_file); 
     // Output stats
     uint64_t n_cells = 0;
     uint64_t n_modules = 0;
@@ -67,7 +67,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     float seeding_cuda(0);
     float tp_estimating_cpu(0);
     float tp_estimating_cuda(0);
-
+    
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -89,7 +89,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     sd_performance_writer.add_cache("CUDA");
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
-
+     
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
@@ -121,10 +121,10 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
-
+        printf("test1\n");    
         //new
         auto measurements_per_event_cuda = ca_cuda(cells_per_event);
-        
+        printf("test2\n");  
         /*---------------------------------
                Spacepoint formation (cpu)
           ---------------------------------*/
@@ -145,9 +145,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         // CUDA
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
-
+        //new
         auto seeds_cuda = sa_cuda(std::move(spacepoints_per_event));
-
+        //auto seeds_cuda = sa_cuda(std::move(sf(measurements_per_event_cuda)));
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;

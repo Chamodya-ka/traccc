@@ -61,10 +61,11 @@ host_measurement_container clusterization_algorithm::operator()(
     // will be found (and also computes the prefix sums and clusters per module)
     auto total_clusters = vecmem::make_unique_alloc<unsigned int>(m_mr.get());
     *total_clusters = 0;
+    printf("test2\n");  
     traccc::cuda::clusters_sum(cells_per_event, sparse_ccl_indices,
                                *total_clusters, cluster_prefix_sum,
                                clusters_per_module, m_mr.get());
-
+    printf("test5\n");
     // Vector of the exact cluster sizes, will be filled in cluster_counting
     // kernel
     vecmem::vector<unsigned int> cluster_sizes(*total_clusters, 0, &m_mr.get());
