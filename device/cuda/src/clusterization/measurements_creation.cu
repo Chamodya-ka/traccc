@@ -55,7 +55,7 @@ void measurement_creation(measurement_container_types::view measurements_view,
     auto nMeasurementCreationThreads = 64;
     auto nMeasurementCreationBlocks = (n_clusters + nMeasurementCreationThreads - 1)
                                         / nMeasurementCreationThreads;
-    printf("n_clusters:%d\n",n_clusters);                                        
+    printf("n_clusters:%d nMeasurementCreationBlocks:%d\n",n_clusters,nMeasurementCreationBlocks);                                        
     // Run the kernel
     kernel::measurement_creation<<<nMeasurementCreationBlocks,nMeasurementCreationThreads>>>(
         clusters_view,measurements_view,cells_view);

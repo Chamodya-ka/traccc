@@ -86,7 +86,7 @@ void cluster_counting(
     
     auto n_cells = cells_prefix_sum_view.size();
 
-
+    printf("n_cells : %d\n",n_cells);
 
     //CUDA kernel dementions
     auto nClusterCountingThreads = 64;

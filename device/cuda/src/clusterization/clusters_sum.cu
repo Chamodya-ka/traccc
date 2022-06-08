@@ -76,7 +76,7 @@ void clusters_sum(
     //const unsigned int nDClustersSumBlocks = 1;
 
     // Launch clusters_sum kernel
-
+    printf("n_modules :%ld nDClustersSumBlocks :%d\n",n_modules,nDClustersSumBlocks);
     kernels::clusters_sum<<<nDClustersSumBlocks,nClustersSumThreads>>>
         (cells_view,sparse_ccl_indices_view,total_clusters,
         cluster_prefix_sum_view,clusters_per_module_view);    

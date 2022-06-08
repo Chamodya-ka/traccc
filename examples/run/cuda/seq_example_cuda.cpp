@@ -113,9 +113,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
 
 
-        //new
-        auto spacepoints_per_event_cuda = ca_cuda(cells_per_event);
-        //end new
+
 
         /*-----------------------------
               Clusterization (cpu)
@@ -125,12 +123,17 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             std::chrono::system_clock::now();
 
         auto measurements_per_event = ca(cells_per_event);
-
+        // new
+        printf("CPU measurements_per_event : %d\n",measurements_per_event.total_size());
+        // end new
         /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cpu =
             end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
+        //new
+        auto spacepoints_per_event_cuda = ca_cuda(cells_per_event);
+        //end new
         /*---------------------------------
                Spacepoint formation (cpu)
           ---------------------------------*/
