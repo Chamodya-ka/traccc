@@ -76,7 +76,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           -------------------*/
 
         auto measurements_per_event = ca(cells_per_event);
-
+        printf("measurements_per_event CPU : %d",measurements_per_event.size());
         /*------------------------
             Spacepoint formation
           ------------------------*/

@@ -86,8 +86,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::jagged_device_vector<unsigned int>
         host_sparse_ccl_indices(sparse_ccl_indices);
     printf("sparse_ccl_indices [4][-1] before: %d\n",host_sparse_ccl_indices.at(4).back());
-    //std::size_t vecRef = *vecmem::get_data(clusters_per_module).ptr();
-    //printf("clusters_per_module[0] before: %ld\n",vecRef);
     /* vecmem::jagged_device_vector<unsigned int>
         host_sparse_ccl_indices1(sparse_ccl_indices);  
 
@@ -96,15 +94,18 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         t_size += host_sparse_ccl_indices1[i].size();
     }
     printf("sparse_ccl_indices total_size before : %ld\n",t_size); */
-
+    auto ptr = vecmem::get_data(clusters_per_module).ptr();
+    auto ptr2 = vecmem::get_data(cluster_prefix_sum).ptr();
+    std::cout << "before clusters_per_module[99]"<<*(ptr+99) << std::endl;
+    std::cout << "before cluster_prefix_sum[99]"<<*(ptr2+99) << std::endl;
     traccc::cuda::clusters_sum(cells_view, sparse_ccl_indices,
                                *total_clusters, cluster_prefix_sum,
                                clusters_per_module);
     
     printf("sparse_ccl_indices [4][-1] after: %d\n",host_sparse_ccl_indices.at(4).back());
     //std::vector<std::size_t>& vecRef = *vecmem::get_data(clusters_per_module).ptr();
-    std::size_t vecRef = (*vecmem::get_data(clusters_per_module).ptr());
-    printf("clusters_per_module[0] before: %ld\n",vecRef);
+    std::cout << "before clusters_per_module[99]"<< *(ptr+99) << std::endl;
+    std::cout << "before cluster_prefix_sum[99]"<<*(ptr2+99) << std::endl;
     //printf("clusters_per_module[0] after: %d\n",clusters_per_module);
     /* vecmem::jagged_device_vector<unsigned int>
         host_sparse_ccl_indices2(sparse_ccl_indices); 
@@ -114,15 +115,18 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     }
     printf("sparse_ccl_indices total_size after : %ld\n",t_size); */
     // Vector of the exact cluster sizes, will be filled in cluster counting
+
     vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
         *total_clusters, m_mr.get());
     copy.setup(cluster_sizes_buffer);
-
+    auto ptr3 = vecmem::get_data(cluster_sizes_buffer).ptr();
+    
+    std::cout << "before cluster_sizes_buffer[99] "<<*(ptr3+99) << std::endl;
     traccc::cuda::cluster_counting(sparse_ccl_indices, cluster_sizes_buffer,
                         cluster_prefix_sum,
                         vecmem::get_data(cells_prefix_sum));
 
-
+    std::cout << "after cluster_sizes_buffer[99] "<<*(ptr3+99) << std::endl;
 
     std::vector<unsigned int> cluster_sizes;
     copy(cluster_sizes_buffer, cluster_sizes);
@@ -138,17 +142,26 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
 
-    // Component connection kernel
-    traccc::cuda::component_connection(clusters_buffer, cells_view, sparse_ccl_indices, cluster_prefix_sum,
-        vecmem::get_data(cells_prefix_sum));
-
     traccc::cluster_container_types::host cluster_p_event;
     copy(clusters_buffer.headers,
             cluster_p_event.get_headers());
     copy(clusters_buffer.items,
             cluster_p_event.get_items());
+
+    printf("cluster_p_event.total_size() before %ld\n", cluster_p_event.total_size());
+
+    // Component connection kernel
+    traccc::cuda::component_connection(clusters_buffer, cells_view, sparse_ccl_indices, cluster_prefix_sum,
+        vecmem::get_data(cells_prefix_sum));
+
+    copy(clusters_buffer.headers,
+            cluster_p_event.get_headers());
+    copy(clusters_buffer.items,
+            cluster_p_event.get_items());
     
-    printf("cluster_p_event.total_size() %ld\n", cluster_p_event.total_size());
+    printf("cluster_p_event.total_size() after %ld\n", cluster_p_event.total_size());
+    printf("clusters_buffer view. header size() %ld\n", clusters_buffer.headers.size());
+
 
     // Copy the sizes of clusters per each module to the std vector for
     // measurement buffer initialization
@@ -163,6 +176,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(measurements_buffer.headers);
     copy.setup(measurements_buffer.items);
     // Measurement creation kernel
+
     traccc::cuda::measurement_creation(measurements_buffer, clusters_buffer,
                                         cells_view);
     

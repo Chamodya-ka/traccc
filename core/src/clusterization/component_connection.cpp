@@ -34,7 +34,7 @@ component_connection::output_type component_connection::operator()(
     // Get total number of clusters
     const std::size_t N =
         std::accumulate(num_clusters.begin(), num_clusters.end(), 0);
-
+    printf("cpu total clusters %ld \n",N);
     // Create the result container.
     output_type result(N, &(m_mr.get()));
 
@@ -57,7 +57,7 @@ component_connection::output_type component_connection::operator()(
 
         stack += num_clusters[i];
     }
-
+    printf("cpu total size component_con results [clusters_buffer] %ld \n",result.total_size());
     return result;
 }
 

@@ -8,6 +8,8 @@
 // Project include(s).
 #include "measurements_creation.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
+#define CudaAssert( X ) if ( !(X) ) { printf( "Thread %d:%d failed assert at %s:%d!", blockIdx.x, threadIdx.x, __FILE__, __LINE__ ); return; }
+
 
 namespace traccc::cuda {
 
@@ -38,7 +40,7 @@ __global__ void measurement_creation(cluster_container_types::const_view cluster
 
     // Should not happen
     assert(cluster.empty() == false);
-
+    
     // Fill measurement from cluster
     detail::fill_measurement(measurements_device, cluster,
                                 module, module_link, idx);
