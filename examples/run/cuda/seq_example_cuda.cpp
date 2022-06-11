@@ -332,11 +332,12 @@ int main(int argc, char* argv[]) {
     common_opts.read(vm);
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
-
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << full_tracking_input_cfg.cell_directory << " "
-              << common_opts.events << std::endl;
+              << common_opts.events <<" "
+              << common_opts.proc_num
+              << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts, run_cpu);
 }
