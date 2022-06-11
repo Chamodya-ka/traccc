@@ -21,6 +21,14 @@ component_connection::output_type component_connection::operator()(
 
     std::vector<std::size_t> num_clusters(cells.size(), 0);
     std::vector<std::vector<unsigned int>> CCL_indices(cells.size());
+    
+    // test
+/*     const auto& cellsw = cells.get_items()[1];
+    for (int i = 0 ; i < cellsw.size() ; i ++){
+        printf("%ld ",cellsw[i]);
+    }
+ */
+    //
 
     for (std::size_t i = 0; i < cells.size(); i++) {
         const auto& cells_per_module = cells.get_items()[i];
@@ -30,6 +38,18 @@ component_connection::output_type component_connection::operator()(
         // Run SparseCCL to fill CCL indices
         num_clusters[i] = detail::sparse_ccl(cells_per_module, CCL_indices[i]);
     }
+    printf("first 20 of num clusters[] CPU \n");
+    /* for (int i=0 ; i < 20 ; i++){
+        printf("%ld ",num_clusters[i]);
+    }
+    printf("\n");
+    for (int i =0 ; i < 10 ; i++){
+        for (int j = 0 ; j < CCL_indices[i].size() ; j ++){
+            printf("%ld ",CCL_indices[i][j]);
+        }
+        printf("\n");
+    } */
+
 
     // Get total number of clusters
     const std::size_t N =
@@ -56,6 +76,13 @@ component_connection::output_type component_connection::operator()(
         }
 
         stack += num_clusters[i];
+    }
+    printf("cpu results component con results [clusters_buffer] \n");
+    for (int i =0 ; i < 20 ; i++){
+        for (int j = 0 ; j < result.get_items()[i].size();j++){
+            printf("%d ",result.get_items()[i][j]);
+        }
+        printf("\n");
     }
     printf("cpu total size component_con results [clusters_buffer] %ld \n",result.total_size());
     return result;

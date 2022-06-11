@@ -10,7 +10,7 @@
 
 #include "traccc/clusterization/detail/measurement_creation_helper.hpp"
 #include "traccc/definitions/primitives.hpp"
-
+#include <iostream>
 namespace traccc {
 
 measurement_creation::measurement_creation(vecmem::memory_resource &mr)
@@ -19,7 +19,11 @@ measurement_creation::measurement_creation(vecmem::memory_resource &mr)
 measurement_creation::output_type measurement_creation::operator()(
     const cell_container_types::host &cells,
     const cluster_container_types::host &clusters) const {
-
+    printf("Size of clusters in measurements creation CPU : %ld \n",clusters.total_size());
+/*     for (int i = 0 ; i<1000; i++){
+       std::cout << clusters[i] << " ";
+    } */
+    std::cout<<std::endl;
     // Create the result object.
     output_type result(&(m_mr.get()));
     result.reserve(cells.size());
@@ -56,7 +60,7 @@ measurement_creation::output_type measurement_creation::operator()(
         // Fill measurement from cluster
         detail::fill_measurement(result, cluster, module, module_link, i);
     }
-
+    printf("cpu total size measurements results [measurements buffer] %ld \n",result.total_size());
     return result;
 }
 

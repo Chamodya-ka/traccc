@@ -39,6 +39,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Get the view of the cells container
     auto cells_data = get_data(cells_per_event, &m_mr.get());
     cell_container_types::const_view cells_view(cells_data);
+    
+    // test cells_data ok    
 
     // Get the sizes of the cells in each module
     auto cell_sizes = copy.get_sizes(cells_view.items);
@@ -85,7 +87,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // 
     vecmem::jagged_device_vector<unsigned int>
         host_sparse_ccl_indices(sparse_ccl_indices);
-    printf("sparse_ccl_indices [4][-1] before: %d\n",host_sparse_ccl_indices.at(4).back());
+    
     /* vecmem::jagged_device_vector<unsigned int>
         host_sparse_ccl_indices1(sparse_ccl_indices);  
 
@@ -96,16 +98,27 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     printf("sparse_ccl_indices total_size before : %ld\n",t_size); */
     auto ptr = vecmem::get_data(clusters_per_module).ptr();
     auto ptr2 = vecmem::get_data(cluster_prefix_sum).ptr();
-    std::cout << "before clusters_per_module[99]"<<*(ptr+99) << std::endl;
-    std::cout << "before cluster_prefix_sum[99]"<<*(ptr2+99) << std::endl;
+
     traccc::cuda::clusters_sum(cells_view, sparse_ccl_indices,
                                *total_clusters, cluster_prefix_sum,
-                               clusters_per_module);
-    
-    printf("sparse_ccl_indices [4][-1] after: %d\n",host_sparse_ccl_indices.at(4).back());
+                               clusters_per_module);   
+    for (int i =0 ; i < 10 ; i ++){
+        for (int j =0 ; j < host_sparse_ccl_indices[i].size() ; j++){
+            printf("%ld ",host_sparse_ccl_indices[i][j]);
+        }
+        printf("\n");
+    }
     //std::vector<std::size_t>& vecRef = *vecmem::get_data(clusters_per_module).ptr();
-    std::cout << "before clusters_per_module[99]"<< *(ptr+99) << std::endl;
-    std::cout << "before cluster_prefix_sum[99]"<<*(ptr2+99) << std::endl;
+    std::cout << "after clusters_per_module first 10" << std::endl;
+
+    for (int i =0 ; i < 10 ; i ++){
+        std::cout <<*(ptr+i) << " ";
+    }
+    std::cout << "\ncluster_prefix_sum first 10" << std::endl;
+    for (int i =0 ; i < 10 ; i ++){
+        std::cout << *(ptr2+i) << " " ;
+    }
+    std::cout<< std::endl;
     //printf("clusters_per_module[0] after: %d\n",clusters_per_module);
     /* vecmem::jagged_device_vector<unsigned int>
         host_sparse_ccl_indices2(sparse_ccl_indices); 
@@ -119,14 +132,32 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::data::vector_buffer<unsigned int> cluster_sizes_buffer(
         *total_clusters, m_mr.get());
     copy.setup(cluster_sizes_buffer);
-    auto ptr3 = vecmem::get_data(cluster_sizes_buffer).ptr();
+
     
-    std::cout << "before cluster_sizes_buffer[99] "<<*(ptr3+99) << std::endl;
+
+
+    //cluster_prefix_sum
     traccc::cuda::cluster_counting(sparse_ccl_indices, cluster_sizes_buffer,
                         cluster_prefix_sum,
                         vecmem::get_data(cells_prefix_sum));
+    
+    //Tessts
+    printf("CUDA cluster_prefix_sum first 20\n");
+    auto ptr_cluster_ps = cluster_prefix_sum.ptr();
+    for (int i = 0 ; i < 20 ; i ++){
+        std::cout << *(ptr_cluster_ps+i) << " " ;
+    }
+    std::cout<< std::endl;
+    
+    printf("CUDA cluster sizes buffer [num_clusters]\n");
 
-    std::cout << "after cluster_sizes_buffer[99] "<<*(ptr3+99) << std::endl;
+    vecmem::device_vector<unsigned int>
+        host_cluster_sizes_buffer(cluster_sizes_buffer);
+
+    for (int i = 0 ; i < 20 ; i ++){
+        printf("%ld ", host_cluster_sizes_buffer[i]);
+    }
+    printf("\n");
 
     std::vector<unsigned int> cluster_sizes;
     copy(cluster_sizes_buffer, cluster_sizes);
@@ -149,7 +180,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
             cluster_p_event.get_items());
 
     printf("cluster_p_event.total_size() before %ld\n", cluster_p_event.total_size());
+    printf("clusters_buffer view. header size() before %ld\n", clusters_buffer.headers.size());
+    /* auto ptr5 = vecmem::get_data(clusters_buffer).ptr();
+    for (int i = 0 ; i<1000; i++){
 
+       std::cout << *(ptr5+i) << " ";
+    } */
+    std::cout<<std::endl;
     // Component connection kernel
     traccc::cuda::component_connection(clusters_buffer, cells_view, sparse_ccl_indices, cluster_prefix_sum,
         vecmem::get_data(cells_prefix_sum));
@@ -162,12 +199,23 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     printf("cluster_p_event.total_size() after %ld\n", cluster_p_event.total_size());
     printf("clusters_buffer view. header size() %ld\n", clusters_buffer.headers.size());
 
-
+    for(int i =0 ; i < 20 ; i ++){
+        for (int j = 0 ; j < cluster_p_event.get_items()[i].size() ; j ++){
+            printf("%d ", cluster_p_event.get_items()[i][j]);
+        }
+        printf("\n");
+    }
+    int t_size_clusters_buffer = 0 ;
+    for(int i =0 ; i < cluster_p_event.get_items().size() ; i ++){
+        t_size_clusters_buffer += cluster_p_event.get_items()[i].size();
+    }
+    printf("t_size_clusters_buffer %ld\n",t_size_clusters_buffer);
     // Copy the sizes of clusters per each module to the std vector for
     // measurement buffer initialization
     std::vector<std::size_t> clusters_per_module_host;
     copy(clusters_per_module, clusters_per_module_host);
-    printf("Clusters Per Module Host : %ld \n", clusters_per_module_host.size());
+    // clusters_per_module_host ok so clusters per module ok
+    
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.get()},
