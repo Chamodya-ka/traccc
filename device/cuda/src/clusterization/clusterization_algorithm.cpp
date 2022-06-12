@@ -144,7 +144,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     //Tessts
     printf("CUDA cluster_prefix_sum first 20\n");
     auto ptr_cluster_ps = cluster_prefix_sum.ptr();
-    for (int i = 0 ; i < 20 ; i ++){
+    for (int i = 0 ; i < 10 ; i ++){
         std::cout << *(ptr_cluster_ps+i) << " " ;
     }
     std::cout<< std::endl;
@@ -173,7 +173,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(clusters_buffer.headers);
     copy.setup(clusters_buffer.items);
 
-    traccc::cluster_container_types::host cluster_p_event;
+/*     traccc::cluster_container_types::host cluster_p_event;
     copy(clusters_buffer.headers,
             cluster_p_event.get_headers());
     copy(clusters_buffer.items,
@@ -181,17 +181,17 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     printf("cluster_p_event.total_size() before %ld\n", cluster_p_event.total_size());
     printf("clusters_buffer view. header size() before %ld\n", clusters_buffer.headers.size());
-    /* auto ptr5 = vecmem::get_data(clusters_buffer).ptr();
+     auto ptr5 = vecmem::get_data(clusters_buffer).ptr();
     for (int i = 0 ; i<1000; i++){
 
        std::cout << *(ptr5+i) << " ";
-    } */
-    std::cout<<std::endl;
+    } 
+    std::cout<<std::endl; */
     // Component connection kernel
     traccc::cuda::component_connection(clusters_buffer, cells_view, sparse_ccl_indices, cluster_prefix_sum,
         vecmem::get_data(cells_prefix_sum));
 
-    copy(clusters_buffer.headers,
+/*     copy(clusters_buffer.headers,
             cluster_p_event.get_headers());
     copy(clusters_buffer.items,
             cluster_p_event.get_items());
@@ -199,17 +199,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     printf("cluster_p_event.total_size() after %ld\n", cluster_p_event.total_size());
     printf("clusters_buffer view. header size() %ld\n", clusters_buffer.headers.size());
 
-    for(int i =0 ; i < 20 ; i ++){
+    for(int i =0 ; i < 10 ; i ++){
         for (int j = 0 ; j < cluster_p_event.get_items()[i].size() ; j ++){
             printf("%d ", cluster_p_event.get_items()[i][j]);
         }
         printf("\n");
-    }
-    int t_size_clusters_buffer = 0 ;
-    for(int i =0 ; i < cluster_p_event.get_items().size() ; i ++){
-        t_size_clusters_buffer += cluster_p_event.get_items()[i].size();
-    }
-    printf("t_size_clusters_buffer %ld\n",t_size_clusters_buffer);
+    } */
+
     // Copy the sizes of clusters per each module to the std vector for
     // measurement buffer initialization
     std::vector<std::size_t> clusters_per_module_host;
@@ -240,8 +236,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     
     printf("measurements_p_event.total_size() %ld\n", measurements_p_event.total_size());
    
-
-
     // Spacepoint container buffer to fill in spacepoint formation
     spacepoint_container_types::buffer spacepoints_buffer{
         {num_modules, m_mr.get()},
@@ -250,7 +244,6 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(spacepoints_buffer.headers);
     copy.setup(spacepoints_buffer.items);
 
-    printf("Measurements Buffer items m_size %d \n",measurements_buffer.items.m_size);
     // Get the prefix sum of the measurements.
     const device::prefix_sum_t measurements_prefix_sum = device::get_prefix_sum(
         copy.get_sizes(measurements_buffer.items), m_mr.get());
@@ -260,6 +253,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     traccc::cuda::spacepoint_formation(
         spacepoints_buffer, measurements_buffer,
         vecmem::get_data(measurements_prefix_sum));
+
+
+    traccc::spacepoint_container_types::host  spacepoints_cuda;
+    copy(spacepoints_buffer.headers,
+            spacepoints_cuda.get_headers());
+    copy(spacepoints_buffer.items,
+            spacepoints_cuda.get_items());
+     printf("spacepoints_cuda.total_size() %ld\n", spacepoints_cuda.total_size());
 
     return spacepoints_buffer;
 }

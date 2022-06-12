@@ -8,15 +8,13 @@
 // Project include(s).
 #include "measurements_creation.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
-#define CudaAssert( X ) if ( !(X) ) { printf( "Thread %d:%d failed assert at %s:%d!", blockIdx.x, threadIdx.x, __FILE__, __LINE__ ); return; }
-
 
 namespace traccc::cuda {
 
 namespace kernel{
 __global__ void measurement_creation(cluster_container_types::const_view clusters_view,
                         measurement_container_types::view measurements_view,
-                        const cell_container_types::const_view& cells_view)
+                        cell_container_types::const_view cells_view)
 {
     auto idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -40,7 +38,7 @@ __global__ void measurement_creation(cluster_container_types::const_view cluster
 
     // Should not happen
     assert(cluster.empty() == false);
-    
+
     // Fill measurement from cluster
     detail::fill_measurement(measurements_device, cluster,
                                 module, module_link, idx);
@@ -57,7 +55,7 @@ void measurement_creation(measurement_container_types::view measurements_view,
     auto nMeasurementCreationThreads = 64;
     auto nMeasurementCreationBlocks = (n_clusters + nMeasurementCreationThreads - 1)
                                         / nMeasurementCreationThreads;
-    printf("n_clusters:%d nMeasurementCreationBlocks:%d\n",n_clusters,nMeasurementCreationBlocks);                                        
+    printf("n_clusters:%d Blocks:%d\n",n_clusters,nMeasurementCreationBlocks);                                        
     // Run the kernel
     kernel::measurement_creation<<<nMeasurementCreationBlocks,nMeasurementCreationThreads>>>(
         clusters_view,measurements_view,cells_view);

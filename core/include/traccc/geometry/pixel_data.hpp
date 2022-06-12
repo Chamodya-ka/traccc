@@ -8,7 +8,7 @@
 #pragma once
 
 #include "traccc/definitions/primitives.hpp"
-
+#include "traccc/definitions/qualifiers.hpp"
 namespace traccc {
 
 /// A very basic pixel segmentation with
@@ -21,7 +21,8 @@ struct pixel_data {
     scalar min_center_y = 0.;
     scalar pitch_x = 1.;
     scalar pitch_y = 1.;
-
+    
+    TRACCC_HOST_DEVICE
     vector2 get_pitch() const { return {pitch_x, pitch_y}; };
 };
 

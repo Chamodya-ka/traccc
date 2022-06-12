@@ -78,7 +78,7 @@ component_connection::output_type component_connection::operator()(
         stack += num_clusters[i];
     }
     printf("cpu results component con results [clusters_buffer] \n");
-    for (int i =0 ; i < 20 ; i++){
+    for (int i =0 ; i < 10 ; i++){
         for (int j = 0 ; j < result.get_items()[i].size();j++){
             printf("%d ",result.get_items()[i][j]);
         }

@@ -54,7 +54,6 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 
         // Only consider cells over a minimum threshold.
         if (weight > module.threshold) {
-
             // Update all output properties with this cell.
             totalWeight += cell.activation;
             const point2 cell_position = position_from_cell(cell, module);
@@ -100,9 +99,11 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     scalar totalWeight = 0.;
     point2 mean{0., 0.}, var{0., 0.};
     detail::calc_cluster_properties(cluster, module, mean, var, totalWeight);
-
+    
     if (totalWeight > 0.) {
+        
         measurement m;
+        
         // cluster link
         m.cluster_link = cl_link;
         // normalize the cell position
@@ -111,14 +112,21 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
         m.variance[0] = var[0] / totalWeight;
         m.variance[1] = var[1] / totalWeight;
         // plus pitch^2 / 12
+        //printf("%f ",totalWeight);
         const auto pitch = module.pixel.get_pitch();
+        //printf("%f ",totalWeight);
         m.variance = m.variance +
                      point2{pitch[0] * pitch[0] / 12, pitch[1] * pitch[1] / 12};
         // @todo add variance estimation
-
+        
+        //printf("var 1,2 : %f %f mean : %f %f  cl_link %ld\n" ,m.variance[0],m.variance[1],mean[0],mean[1],cl_link);
+        //printf("%f",measurements[module_link].items.back());
+        //printf("\n");
         measurements[module_link].header = module;
         measurements[module_link].items.push_back(std::move(m));
+
     }
+    
 }
 
 }  // namespace traccc::detail
