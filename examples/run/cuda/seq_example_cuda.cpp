@@ -154,7 +154,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 
-        auto seeds_cuda = sa_cuda(std::move(spacepoints_per_event_cuda));
+        auto seeds_cuda = sa_cuda(spacepoints_per_event_cuda);
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -218,10 +218,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector =
                 traccc::get_spacepoint_vector(seeds, spacepoints_per_event);
+            vecmem::copy copy;
 
+            traccc::spacepoint_container_types::host spacepoints_cuda(&mng_mr);
+            copy(spacepoints_per_event_cuda,spacepoints_cuda);
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_cuda =
                 traccc::get_spacepoint_vector(seeds_cuda,
-                                              spacepoints_per_event_cuda);
+                                              spacepoints_cuda);
 
             for (const auto& sp3 : sp3_vector) {
                 if (std::find(sp3_vector_cuda.cbegin(), sp3_vector_cuda.cend(),
@@ -261,7 +264,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_spacepoints += spacepoints_per_event.total_size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
-        n_spacepoints_cuda += spacepoints_per_event_cuda.total_size();
+        // get host jv first
+        // n_spacepoints_cuda += spacepoints_per_event_cuda.total_size();
         /*------------
              Writer
           ------------*/

@@ -95,6 +95,9 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             end_hit_reading_cpu - start_hit_reading_cpu;
         /*time*/ hit_reading_cpu += time_hit_reading_cpu.count();
 
+        //get view
+        traccc::spacepoint_container_types::view sp_view = get_data(spacepoints_per_event,&mng_mr);
+
         /*----------------------------
              Seeding algorithm
           ----------------------------*/
