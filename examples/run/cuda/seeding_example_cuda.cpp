@@ -106,7 +106,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
 
         /*time*/ auto start_seeding_cuda = std::chrono::system_clock::now();
 
-        auto seeds_cuda = sa_cuda(std::move(spacepoints_per_event));
+        auto seeds_cuda = sa_cuda(std::move(sp_view));
 
         /*time*/ auto end_seeding_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
@@ -138,7 +138,7 @@ int seq_run(const traccc::seeding_input_config& i_cfg,
             std::chrono::system_clock::now();
 
         auto params_cuda =
-            tp_cuda(std::move(spacepoints_per_event), std::move(seeds_cuda));
+            tp_cuda(std::move(sp_view), std::move(seeds_cuda));
 
         /*time*/ auto end_tp_estimating_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =

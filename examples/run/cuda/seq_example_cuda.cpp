@@ -221,7 +221,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             vecmem::copy copy;
 
             traccc::spacepoint_container_types::host spacepoints_cuda(&mng_mr);
-            copy(spacepoints_per_event_cuda,spacepoints_cuda);
+            //copy(spacepoints_per_event_cuda,spacepoints_cuda);
+            copy(spacepoints_per_event_cuda.headers, spacepoints_cuda.get_headers());
+            copy(spacepoints_per_event_cuda.items, spacepoints_cuda.get_items());
             std::vector<std::array<traccc::spacepoint, 3>> sp3_vector_cuda =
                 traccc::get_spacepoint_vector(seeds_cuda,
                                               spacepoints_cuda);
