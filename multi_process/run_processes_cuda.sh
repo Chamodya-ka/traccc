@@ -3,20 +3,21 @@ num_proc=1 	# number of processes expected to run concurrently
 events=1 	# number of event each process will compute	
 cores=1		# number of cores (sockets)
 threads=1	# number of threads per core 
-datapath=$1
-echo "$path"
-while getopts n:e:c:t: flag;
+datapath=""
+while getopts n:e:c:t:p: flag;
 do
     case "${flag}" in
         n) num_proc=${OPTARG};;
         e) events=${OPTARG};;
 	c) cores=${OPTARG};;
 	t) threads=${OPTARG};;
+	p) datapath=${OPTARG};;
     esac
 done
+echo "$datapath"
 echo "number of processes : $num_proc";
 echo "number of events : $events";
-export TRACCC_TEST_DATA_DIR=$datapath'
+export TRACCC_TEST_DATA_DIR=$datapath
 start=$SECONDS
 for((i=0;i<num_proc;i++))
 do

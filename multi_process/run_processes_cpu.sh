@@ -3,18 +3,21 @@ num_proc=1
 events=1
 cores=1
 threads=1
-while getopts n:e:c:t: flag;
+datapath=""
+while getopts n:e:c:t:p: flag;
 do
     case "${flag}" in
         n) num_proc=${OPTARG};;
         e) events=${OPTARG};;
 	c) cores=${OPTARG};;
 	t) threads=${OPTARG};;
+	p) datapath=${OPTARG};;
     esac
 done
+echo "$datapath"
 echo "number of processes : $num_proc";
 echo "number of events : $events";
-export TRACCC_TEST_DATA_DIR='/home/chamodya/myrepos/recent/traccc/data/'
+export TRACCC_TEST_DATA_DIR=$datapath
 start=$SECONDS
 for((i=0;i<num_proc;i++))
 do
