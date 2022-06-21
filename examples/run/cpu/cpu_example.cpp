@@ -33,6 +33,8 @@ namespace po = boost::program_options;
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
+    float wall_time(0);
+    auto start_wall_time = std::chrono::system_clock::now();
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
 
@@ -104,8 +106,14 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     }
 
+    /*time*/ auto end_wall_time = std::chrono::system_clock::now();
+    /*time*/ std::chrono::duration<double> time_wall_time =
+        end_wall_time - start_wall_time;
 
-
+    /*time*/ wall_time += time_wall_time.count();
+    std::cout << "==> Elpased time ... " << std::endl;
+        std::cout << "wall time           " << std::setw(10) << std::left
+              << wall_time << std::endl;
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_cells << " cells from " << n_modules
               << " modules" << std::endl;
