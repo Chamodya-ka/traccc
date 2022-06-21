@@ -1,8 +1,8 @@
 #!/bin/bash
-num_proc=1
-events=1
-cores=1
-threads=1
+num_proc=1 	# number of processes expected to run concurrently
+events=1 	# number of event each process will compute	
+cores=1		# number of cores (sockets)
+threads=1	# number of threads per core 
 while getopts n:e:c:t: flag;
 do
     case "${flag}" in
@@ -37,11 +37,11 @@ do
 		p=$((($i % $cores)))
 	fi
 	# end get processor id
-	taskset -c $p ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --skip=$skip --input-binary &
+	taskset -c $p ../build/bin/traccc_cuda_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --skip=$skip --input-binary &
 	#cur_pid=$!
 	#echo "$(taskset -pc $cur_pid)"
 	#echo "currentbg :$cur_pid"
-	rm -f performance_track_seeding.root
+	#rm -f performance_track_seeding.root
 done
 wait
 duration=$(( SECONDS - start ));

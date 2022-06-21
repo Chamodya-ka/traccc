@@ -16,10 +16,6 @@
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 
-
-// performance
-#include "traccc/efficiency/seeding_performance_writer.hpp"
-
 // options
 #include "traccc/options/common_options.hpp"
 #include "traccc/options/full_tracking_input_options.hpp"
@@ -94,7 +90,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
         /*time*/ auto start_spacepoints_cuda = std::chrono::system_clock::now();
 
-        traccc::spacepoint_container_types::view spacepoints_per_event_cuda = ca_cuda(cells_per_event);
+        auto spacepoints_per_event_cuda = ca_cuda(cells_per_event);
 
         /*time*/ auto end_spacepoints_cuda = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cuda =
