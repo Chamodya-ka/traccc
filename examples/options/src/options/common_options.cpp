@@ -16,6 +16,8 @@ traccc::common_options::common_options(po::options_description& desc) {
                        "number of events");
     desc.add_options()("skip", po::value<int>()->default_value(0),
                        "number of events to skip");
+    desc.add_options()("proc_num", po::value<int>()->default_value(0),
+                    "process number [only for multi process impl]");
 }
 
 void traccc::common_options::read(const po::variables_map& vm) {
@@ -27,4 +29,5 @@ void traccc::common_options::read(const po::variables_map& vm) {
     }
     events = vm["events"].as<unsigned int>();
     skip = vm["skip"].as<int>();
+    proc_num = vm["proc_num"].as<int>();
 }

@@ -19,7 +19,7 @@ struct common_options {
     traccc::data_format input_data_format = traccc::data_format::csv;
     unsigned int events;
     int skip;
-
+    int proc_num;
     common_options(po::options_description& desc);
     void read(const po::variables_map& vm);
 };
