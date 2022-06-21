@@ -40,11 +40,11 @@ do
 		p=$((($i % $cores)))
 	fi
 	# end get processor id
-	taskset -c $p ../build/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --skip=$skip --input-binary &
+	taskset -c $p ../build/bin/traccc_cpu_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --skip=$skip --input-binary &
 	#cur_pid=$!
 	#echo "$(taskset -pc $cur_pid)"
 	#echo "currentbg :$cur_pid"
-	rm -f performance_track_seeding.root
+	#rm -f performance_track_seeding.root
 done
 wait
 duration=$(( SECONDS - start ));
