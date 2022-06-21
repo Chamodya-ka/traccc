@@ -34,6 +34,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts) {
 
     float wall_time(0);
+    float file_reading(0);
     auto start_wall_time = std::chrono::system_clock::now();
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -64,11 +65,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
          event < common_opts.events + common_opts.skip; ++event) {
 
         // Read the cells from the relevant event file
+        auto start_file_reading = std::chrono::system_clock::now();
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
                 surface_transforms, digi_cfg, host_mr);
+        auto end_file_reading = std::chrono::system_clock::now();
+          /*time*/ std::chrono::duration<double> file_reading_time =
+        end_file_reading - start_file_reading;
 
+      /*time*/ file_reading += file_reading_time.count();
         /*-------------------
             Clusterization
           -------------------*/
@@ -114,6 +120,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     std::cout << "==> Elpased time ... " << std::endl;
         std::cout << "wall time           " << std::setw(10) << std::left
               << wall_time << std::endl;
+        std::cout << "file reading time           " << std::setw(10) << std::left
+              << file_reading << std::endl;
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_cells << " cells from " << n_modules
               << " modules" << std::endl;
