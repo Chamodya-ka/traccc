@@ -26,7 +26,6 @@ class clusterization_algorithm
     /// Constructor for clusterization algorithm
     ///
     /// @param mr is the memory resource
-    /// @param queue is the sycl queue for kernel invocation
     clusterization_algorithm(vecmem::memory_resource& mr);
 
     /// Callable operator for clusterization algorithm
