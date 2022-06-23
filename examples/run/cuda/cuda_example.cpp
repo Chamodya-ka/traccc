@@ -24,6 +24,8 @@
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/binary_page_memory_resource.hpp>
+#include <vecmem/memory/contiguous_memory_resource.hpp>
 
 // System include(s).
 #include <chrono>
@@ -51,20 +53,17 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Elapsed time
     float wall_time(0);
     float file_reading_cpu(0);
-    float clusterization_cpu(0);
-    float sp_formation_cpu(0);
-    float seeding_cpu(0);
     float clusterization_cuda(0);
     float seeding_cuda(0);
-    float tp_estimating_cpu(0);
     float tp_estimating_cuda(0);
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
-
-    traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
-    traccc::cuda::track_params_estimation tp_cuda(mng_mr);
-    traccc::cuda::clusterization_algorithm ca_cuda(mng_mr);
+    vecmem::binary_page_memory_resource bpmr(mng_mr);
+    //vecmem::contiguous_memory_resource c_mr(mng_mr,1073741824);
+    traccc::cuda::seeding_algorithm sa_cuda(bpmr);
+    traccc::cuda::track_params_estimation tp_cuda(bpmr);
+    traccc::cuda::clusterization_algorithm ca_cuda(bpmr);
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
@@ -146,7 +145,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     /*time*/ std::chrono::duration<double> time_wall_time =
         end_wall_time - start_wall_time;
 
-    /*time*/ wall_time += time_wall_time.count();
+    /*time*/ wall_time = time_wall_time.count();
 
 
     std::cout << "==> Statistics ... " << std::endl;
@@ -163,16 +162,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
               << file_reading_cpu << std::endl;
     std::cout << "clusterization and spacepoint formation (cuda) " << std::left
               << clusterization_cuda << std::endl;
-    std::cout << "clusterization_time (cpu) " << std::setw(10) << std::left
-              << clusterization_cpu << std::endl;
-    std::cout << "spacepoint_formation_time (cpu) " << std::setw(10)
-              << std::left << sp_formation_cpu << std::endl;
-    std::cout << "seeding_time (cpu)        " << std::setw(10) << std::left
-              << seeding_cpu << std::endl;
     std::cout << "seeding_time (cuda)       " << std::setw(10) << std::left
               << seeding_cuda << std::endl;
-    std::cout << "tr_par_esti_time (cpu)    " << std::setw(10) << std::left
-              << tp_estimating_cpu << std::endl;
     std::cout << "tr_par_esti_time (cuda)   " << std::setw(10) << std::left
               << tp_estimating_cuda << std::endl;
 
