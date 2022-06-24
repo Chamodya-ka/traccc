@@ -30,6 +30,8 @@
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/binary_page_memory_resource.hpp>
+#include <vecmem/memory/contiguous_memory_resource.hpp>
 
 // System include(s).
 #include <chrono>
@@ -72,14 +74,14 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
-
+    vecmem::contiguous_memory_resource c_mr(mng_mr,pow(2,30));
     traccc::clusterization_algorithm ca(mng_mr);
     traccc::spacepoint_formation sf(mng_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
-    traccc::cuda::track_params_estimation tp_cuda(mng_mr);
+    traccc::cuda::seeding_algorithm sa_cuda(c_mr);
+    traccc::cuda::track_params_estimation tp_cuda(c_mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -99,7 +101,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, host_mr);
+                surface_transforms, digi_cfg, c_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
