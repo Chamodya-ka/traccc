@@ -93,8 +93,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
-    std::ofstream csvfile;
-    csvfile.open("timing_cuda.csv");
+
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
@@ -278,8 +277,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_spacepoints += spacepoints_per_event.total_size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
-        csvfile<<event<<","<< file_io<<","<<clusterization_t<<","
-            <<seeding_t<<","<<params_t<<"," << cpu_clusterization <<","<< cpu_sp_formation <<"\n";
+
         // get host jv first
         // n_spacepoints_cuda += spacepoints_per_event_cuda.total_size();
         /*------------
