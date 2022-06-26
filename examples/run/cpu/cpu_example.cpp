@@ -17,7 +17,9 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
-
+// vecmem
+#include <vecmem/memory/binary_page_memory_resource.hpp>
+#include <vecmem/memory/contiguous_memory_resource.hpp>
 
 // options
 #include "traccc/options/common_options.hpp"
@@ -27,7 +29,7 @@
 // System include(s).
 #include <exception>
 #include <iostream>
-
+#include <fstream>
 namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
@@ -35,7 +37,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     float wall_time(0);
     float file_reading(0);
-    auto start_wall_time = std::chrono::system_clock::now();
+    float total_clusterization(0);
+    float total_spacepoints(0);
+    float total_seeding(0);
+    float total_params(0);
+    
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
 
@@ -52,14 +58,17 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
+    //vecmem::binary_page_memory_resource bp_mr(host_mr);
+     vecmem::contiguous_memory_resource c_mr(host_mr,pow(2,30));
 
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    traccc::clusterization_algorithm ca(c_mr);
+    traccc::spacepoint_formation sf(c_mr);
+    traccc::seeding_algorithm sa(c_mr);
+    traccc::track_params_estimation tp(c_mr);
 
-
-
+    auto start_wall_time = std::chrono::system_clock::now();
+    std::ofstream csvfile;
+    csvfile.open("timing_cpu.csv");
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
@@ -69,35 +78,68 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, host_mr);
+                surface_transforms, digi_cfg, c_mr);
         auto end_file_reading = std::chrono::system_clock::now();
           /*time*/ std::chrono::duration<double> file_reading_time =
         end_file_reading - start_file_reading;
-
-      /*time*/ file_reading += file_reading_time.count();
+        float file_io=file_reading_time.count();
+        //std::cout<< "File IO : "<< file_io <<std::endl;
+      /*time*/ file_reading += file_io;
         /*-------------------
             Clusterization
           -------------------*/
 
+        auto start_clusterization = std::chrono::system_clock::now();
+
         auto measurements_per_event = ca(cells_per_event);
+
+        auto end_clusterization = std::chrono::system_clock::now();
+          /*time*/ std::chrono::duration<double> clusterization_time =
+        end_clusterization - start_clusterization;
+        float clusterization_t = clusterization_time.count();
+        //std::cout<< "Clusterization : "<< clusterization_t <<std::endl;
+      /*time*/ total_clusterization += clusterization_t;
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
+        auto start_Spacepoint = std::chrono::system_clock::now();
 
         auto spacepoints_per_event = sf(measurements_per_event);
 
+        auto end_Spacepoint = std::chrono::system_clock::now();
+          /*time*/ std::chrono::duration<double> Spacepoint_time =
+        end_Spacepoint - start_Spacepoint;
+        float spacepoint_t=Spacepoint_time.count();
+        //std::cout<< "Spacepoint : "<< spacepoint_t <<std::endl;
+      /*time*/ total_spacepoints += spacepoint_t;
         /*-----------------------
           Seeding algorithm
           -----------------------*/
+        auto start_Seeding = std::chrono::system_clock::now();
 
         auto seeds = sa(spacepoints_per_event);
+
+        auto end_Seeding = std::chrono::system_clock::now();
+          /*time*/ std::chrono::duration<double> Seeding_time =
+        end_Seeding - start_Seeding;
+        float seeding_t = Seeding_time.count();
+        //std::cout<< "Seeding : "<< seeding_t <<std::endl;
+      /*time*/ total_seeding += seeding_t;
 
         /*----------------------------
           Track params estimation
           ----------------------------*/
+        auto start_params = std::chrono::system_clock::now();
 
         auto params = tp(spacepoints_per_event, seeds);
+
+        auto end_params = std::chrono::system_clock::now();
+          /*time*/ std::chrono::duration<double> params_time =
+        end_params - start_params;
+        float params_t = params_time.count();
+        //std::cout<< "Track params : "<< params_t <<std::endl;
+      /*time*/ total_params += params_t;
 
         /*----------------------------
           Statistics
@@ -108,9 +150,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         n_measurements += measurements_per_event.total_size();
         n_spacepoints += spacepoints_per_event.total_size();
         n_seeds += seeds.size();
-
+        //std::cout<<std::endl;
+        csvfile<<event<<","<< file_io<<","<<clusterization_t<<","<<spacepoint_t<<","
+        <<seeding_t<<","<<params_t<<"\n";
 
     }
+    csvfile.close();
+    
 
     /*time*/ auto end_wall_time = std::chrono::system_clock::now();
     /*time*/ std::chrono::duration<double> time_wall_time =

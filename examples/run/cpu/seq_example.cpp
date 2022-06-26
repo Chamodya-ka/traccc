@@ -33,7 +33,7 @@ namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts) {
-
+    
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
 
@@ -60,11 +60,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
     sd_performance_writer.add_cache("CPU");
-
+    auto start_wall_time = std::chrono::system_clock::now();        
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
-
+ 
         // Read the cells from the relevant event file
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
@@ -94,7 +94,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           ----------------------------*/
 
         auto params = tp(spacepoints_per_event, seeds);
-
         /*----------------------------
           Statistics
           ----------------------------*/
@@ -119,7 +118,13 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                         evt_map);
         }
     }
-
+    /*time*/ auto end_wall_time = std::chrono::system_clock::now();
+    /*time*/ std::chrono::duration<double> time_wall_time =
+        end_wall_time - start_wall_time;
+    /*time*/ float wall_time = time_wall_time.count();
+    std::cout << "==> Elpased time ... " << std::endl;
+        std::cout << "wall time           " << std::setw(10) << std::left
+              << wall_time << std::endl;
     sd_performance_writer.finalize();
 
     std::cout << "==> Statistics ... " << std::endl;
