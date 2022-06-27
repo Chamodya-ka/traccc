@@ -321,7 +321,8 @@ int main(int argc, char* argv[]) {
     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
-
+    desc.add_options()("gpu_id",po::value<int>()->default_value(0),
+                    "Select which GPU to use by index");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -332,7 +333,8 @@ int main(int argc, char* argv[]) {
     common_opts.read(vm);
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
-
+    int gpu_ID = vm["gpu_id"].as<int>();
+    printf("%d \n",gpu_ID);
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << full_tracking_input_cfg.cell_directory << " "
