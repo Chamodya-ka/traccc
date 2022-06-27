@@ -59,12 +59,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
     //vecmem::binary_page_memory_resource bp_mr(host_mr);
-     vecmem::contiguous_memory_resource c_mr(host_mr,pow(2,30));
+    //vecmem::contiguous_memory_resource c_mr(host_mr,pow(2,30));
 
-    traccc::clusterization_algorithm ca(c_mr);
-    traccc::spacepoint_formation sf(c_mr);
-    traccc::seeding_algorithm sa(c_mr);
-    traccc::track_params_estimation tp(c_mr);
+    traccc::clusterization_algorithm ca(host_mr);
+    traccc::spacepoint_formation sf(host_mr);
+    traccc::seeding_algorithm sa(host_mr);
+    traccc::track_params_estimation tp(host_mr);
 
     auto start_wall_time = std::chrono::system_clock::now();
 
@@ -77,7 +77,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, c_mr);
+                surface_transforms, digi_cfg, host_mr);
         auto end_file_reading = std::chrono::system_clock::now();
           /*time*/ std::chrono::duration<double> file_reading_time =
         end_file_reading - start_file_reading;

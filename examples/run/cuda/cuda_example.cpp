@@ -163,16 +163,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
               << file_reading_cpu << std::endl;
     std::cout << "clusterization and spacepoint formation (cuda) " << std::left
               << clusterization_cuda << std::endl;
-    std::cout << "clusterization_time (cpu) " << std::setw(10) << std::left
-              << clusterization_cpu << std::endl;
-    std::cout << "spacepoint_formation_time (cpu) " << std::setw(10)
-              << std::left << sp_formation_cpu << std::endl;
-    std::cout << "seeding_time (cpu)        " << std::setw(10) << std::left
-              << seeding_cpu << std::endl;
     std::cout << "seeding_time (cuda)       " << std::setw(10) << std::left
               << seeding_cuda << std::endl;
-    std::cout << "tr_par_esti_time (cpu)    " << std::setw(10) << std::left
-              << tp_estimating_cpu << std::endl;
     std::cout << "tr_par_esti_time (cuda)   " << std::setw(10) << std::left
               << tp_estimating_cuda << std::endl;
 

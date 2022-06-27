@@ -78,6 +78,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     //vecmem::contiguous_memory_resource c_mr(mng_mr,pow(2,30));
     //vecmem::binary_page_memory_resource bpmr(mng_mr);
 
+
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
