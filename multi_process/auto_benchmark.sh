@@ -22,7 +22,7 @@ do
 	for((j=1;j<=max_proc;j++))
 	do
 		echo "starting new run with $j events";
-		./benchmark_cpu.sh -p ../data -n$i -e$j -c$cores -t$threads
+		./benchmark_cpu.sh -p ../data -n$j -e$i -c$cores -t$threads
 		sleep 1
 	done		
 done
