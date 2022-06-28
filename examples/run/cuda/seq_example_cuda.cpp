@@ -74,14 +74,15 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
-    vecmem::contiguous_memory_resource c_mr(mng_mr,pow(2,30));
+    //vecmem::contiguous_memory_resource c_mr(mng_mr,pow(2,30));
+    vecmem::binary_page_memory_resource bp_mr(mng_mr);
     traccc::clusterization_algorithm ca(mng_mr);
     traccc::spacepoint_formation sf(mng_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda(c_mr);
-    traccc::cuda::track_params_estimation tp_cuda(c_mr);
+    traccc::cuda::seeding_algorithm sa_cuda(bp_mr);
+    traccc::cuda::track_params_estimation tp_cuda(bp_mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -101,11 +102,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, c_mr);
+                surface_transforms, digi_cfg, bp_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
             end_file_reading_cpu - start_file_reading_cpu;
+        std::cout<<event<<" File_IO: "<<time_file_reading_cpu.count()<<std::endl;
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
 
         /*-----------------------------
@@ -120,6 +122,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cpu =
             end_clusterization_cpu - start_clusterization_cpu;
+        //std::cout<<event<<" clusterization cpu: "<<time_clusterization_cpu.count()<<std::endl;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
         /*---------------------------------
@@ -134,7 +137,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
             end_sp_formation_cpu - start_sp_formation_cpu;
         /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
-
+        //std::cout<<event<<" spacepoint formation cpu: "<<time_sp_formation_cpu.count()<<std::endl;
         /*----------------------------
              Seeding algorithm
           ----------------------------*/
@@ -149,7 +152,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
-
+        //std::cout<<event<<" seeding cuda: "<<time_seeding_cuda.count()<<std::endl;
         // CPU
 
         /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();

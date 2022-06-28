@@ -25,6 +25,9 @@
 #include "traccc/options/full_tracking_input_options.hpp"
 #include "traccc/options/handle_argument_errors.hpp"
 
+#include <vecmem/memory/binary_page_memory_resource.hpp>
+#include <vecmem/memory/contiguous_memory_resource.hpp>
+
 // System include(s).
 #include <exception>
 #include <iostream>
@@ -50,11 +53,11 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
-
-    traccc::clusterization_algorithm ca(host_mr);
-    traccc::spacepoint_formation sf(host_mr);
-    traccc::seeding_algorithm sa(host_mr);
-    traccc::track_params_estimation tp(host_mr);
+    vecmem::binary_page_memory_resource bp_mr(host_mr);
+    traccc::clusterization_algorithm ca(bp_mr);
+    traccc::spacepoint_formation sf(bp_mr);
+    traccc::seeding_algorithm sa(bp_mr);
+    traccc::track_params_estimation tp(bp_mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -64,37 +67,56 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
-
+        /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
         // Read the cells from the relevant event file
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(
                 event, i_cfg.cell_directory, common_opts.input_data_format,
-                surface_transforms, digi_cfg, host_mr);
-
+                surface_transforms, digi_cfg, bp_mr);
+        /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_file_reading_cpu =
+          end_file_reading_cpu - start_file_reading_cpu;
+        std::cout<<event<<" File_IO: "<<time_file_reading_cpu.count()<<std::endl;
+        
         /*-------------------
             Clusterization
           -------------------*/
-
+        /*time*/ auto start_Clusterization_cpu = std::chrono::system_clock::now();
         auto measurements_per_event = ca(cells_per_event);
-
+                /*time*/ auto end_Clusterization_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_Clusterization_cpu =
+          end_Clusterization_cpu - start_Clusterization_cpu;
+        std::cout<<event<<" Clusterization: "<<time_Clusterization_cpu.count()<<std::endl;
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
+        /*time*/ auto start_Spacepoint_cpu = std::chrono::system_clock::now();
         auto spacepoints_per_event = sf(measurements_per_event);
-
+        /*time*/ auto end_Spacepoint_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_Spacepoint_cpu =
+          end_Spacepoint_cpu - start_Spacepoint_cpu;
+        std::cout<<event<<" Spacepoint: "<<time_Spacepoint_cpu.count()<<std::endl;
         /*-----------------------
           Seeding algorithm
           -----------------------*/
 
+        /*time*/ auto start_Seeding_cpu = std::chrono::system_clock::now();
         auto seeds = sa(spacepoints_per_event);
+                /*time*/ auto end_Seeding_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_Seeding_cpu =
+          end_Seeding_cpu - start_Seeding_cpu;
+        std::cout<<event<<" Seeding: "<<time_Seeding_cpu.count()<<std::endl;
 
         /*----------------------------
           Track params estimation
           ----------------------------*/
-
+        /*time*/ auto start_params_cpu = std::chrono::system_clock::now();
         auto params = tp(spacepoints_per_event, seeds);
-
+                        /*time*/ auto end_params_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_params_cpu =
+          end_params_cpu - start_params_cpu;
+        std::cout<<event<<" Track params est : "<<time_params_cpu.count()<<std::endl;
         /*----------------------------
           Statistics
           ----------------------------*/
