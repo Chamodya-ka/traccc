@@ -63,7 +63,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
-    vecmem::contiguous_memory_resource c_mr(host_mr,pow(2,30));
+    vecmem::contiguous_memory_resource c_mr(mng_mr,pow(2,30.5));
     traccc::cuda::seeding_algorithm sa_cuda(c_mr);
     traccc::cuda::track_params_estimation tp_cuda(c_mr);
     traccc::cuda::clusterization_algorithm ca_cuda(c_mr);
