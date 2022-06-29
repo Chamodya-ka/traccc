@@ -6,13 +6,16 @@ max_proc=2
 max_events=10
 cores=1		# number of cores (sockets)
 threads=1	# number of threads per core 
-while getopts c:t:p:e: flag;
+gpu=1
+while getopts c:t:p:e:g: flag;
 do
     case "${flag}" in
 	c) cores=${OPTARG};;
 	t) threads=${OPTARG};;
 	p) max_proc=${OPTARG};;
 	e) max_events=${OPTARG};;
+	g) gpu=${OPTARG};;
+
     esac
 done
 echo "$max_proc $max_events";
@@ -22,7 +25,7 @@ do
 	for((j=1;j<=max_proc;j++))
 	do
 		echo "starting new run with $j events";
-		./benchmark_cpu.sh -p ../data -n$j -e$i -c$cores -t$threads
+		./benchmark_cuda.sh -p ../data -n$j -e$i -c$cores -t$threads -g$gpu
 		sleep 1
 	done		
 done
