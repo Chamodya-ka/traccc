@@ -25,6 +25,10 @@
 // Local include(s)
 #include "traccc/cuda/utils/definitions.hpp"
 
+// System include(s).
+#include <chrono>
+#include <iostream>
+
 namespace traccc::cuda {
 namespace kernels {
 
@@ -84,12 +88,12 @@ __global__ void form_spacepoints(
 
 }  // namespace kernels
 
-clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr)
-    : m_mr(mr) {}
+clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr,vecmem::memory_resource& hmr)
+    : m_mr(mr), h_mr(hmr) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::host& cells_per_event) const {
-
+    auto start = std::chrono::system_clock::now();
     // Vecmem copy object for moving the data between host and device
     vecmem::copy copy;
 
@@ -114,7 +118,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
      */
     vecmem::data::jagged_vector_buffer<unsigned int> sparse_ccl_indices_buff(
         std::vector<std::size_t>(cell_sizes.begin(), cell_sizes.end()),
-        m_mr.get());
+        m_mr.get(),&h_mr.get());
     copy.setup(sparse_ccl_indices_buff);
 
     /*
@@ -148,7 +152,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     vecmem::data::vector_buffer<std::size_t> cl_per_module_prefix_buff(
         num_modules, m_mr.get());
     copy.setup(cl_per_module_prefix_buff);
-
+    
     // Create views to pass to cluster finding kernel
     const cell_container_types::const_view cells_view(cells_data);
     vecmem::data::jagged_vector_view<unsigned int> sparse_ccl_indices_view =
@@ -160,10 +164,14 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     std::size_t blocksPerGrid =
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
 
+    
     // Invoke find clusters that will call cluster finding kernel
     kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
-
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> time =
+            end - start;
+    std::cout<<"Time "<< time.count()<<std::endl;
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum =
         device::get_prefix_sum(cell_sizes, m_mr.get());
@@ -176,7 +184,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Wait here for the cluster_finding kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> time2 =
+            end2 - start;
+    std::cout<<"Time2 "<< time2.count()<<std::endl;
     // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
     vecmem::vector<std::size_t> cl_per_module_prefix_host(&m_mr.get());

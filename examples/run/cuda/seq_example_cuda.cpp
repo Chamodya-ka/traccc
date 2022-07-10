@@ -81,7 +81,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
     traccc::cuda::track_params_estimation tp_cuda(mng_mr);
-    traccc::cuda::clusterization_algorithm ca_cuda(mng_mr);
+    traccc::cuda::clusterization_algorithm ca_cuda(mng_mr,host_mr);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(

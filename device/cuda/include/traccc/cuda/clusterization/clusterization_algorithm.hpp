@@ -31,7 +31,7 @@ class clusterization_algorithm
     /// Constructor for clusterization algorithm
     ///
     /// @param mr is a memory resource (device)
-    clusterization_algorithm(vecmem::memory_resource& mr);
+    clusterization_algorithm(vecmem::memory_resource& mr,vecmem::memory_resource& hmr);
 
     /// Callable operator for clusterization algorithm
     ///
@@ -44,6 +44,7 @@ class clusterization_algorithm
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
+    std::reference_wrapper<vecmem::memory_resource> h_mr;
 };
 
 }  // namespace traccc::cuda
