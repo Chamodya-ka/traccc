@@ -40,6 +40,9 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Clusterization
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"
+  # Init cuda
+  "include/traccc/cuda/clusterization/init_cuda.hpp"
+  "src/clusterization/init_cuda.cu"
 )
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )

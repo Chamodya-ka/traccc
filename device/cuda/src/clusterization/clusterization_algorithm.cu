@@ -163,18 +163,19 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Calculating grid size for cluster finding kernel
     std::size_t blocksPerGrid =
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
-
+    //cudaFree(0);
     auto start = std::chrono::system_clock::now();
 
-    // Invoke find clusters that will call cluster finding kernel
-    //kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
-    //    cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
+    
     /* void (*kernel_find_clusters)(onst cell_container_types::const_view,
     vecmem::data::jagged_vector_view<unsigned int>,
     vecmem::data::vector_view<std::size_t>); */
-    void* args[] = {(void*)&cells_view, (void*)&sparse_ccl_indices_view, (void*)&cl_per_module_prefix_view};
-    cudaLaunchKernel((void*)kernels::find_clusters,dim3(1,1,blocksPerGrid),dim3(1,1,threadsPerBlock),
-        args,0,NULL);
+    //void* args[] = {(void*)&cells_view, (void*)&sparse_ccl_indices_view, (void*)&cl_per_module_prefix_view};
+    //cudaLaunchKernel((void*)kernels::find_clusters,dim3(1,1,blocksPerGrid),dim3(1,1,threadsPerBlock),
+    //    args,0,NULL);
+    // Invoke find clusters that will call cluster finding kernel
+    kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
+        cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> time =
             end - start;

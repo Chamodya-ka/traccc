@@ -20,6 +20,8 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 
+#include "traccc/cuda/clusterization/init_cuda.hpp"
+
 // performance
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 
@@ -38,11 +40,12 @@
 #include <iomanip>
 #include <iostream>
 
+
 namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
-
+    traccc::cuda::init_cuda();            
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
 
