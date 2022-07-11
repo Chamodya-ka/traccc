@@ -93,7 +93,7 @@ clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr,v
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::host& cells_per_event) const {
-    auto start = std::chrono::system_clock::now();
+    
     // Vecmem copy object for moving the data between host and device
     vecmem::copy copy;
 
@@ -164,14 +164,27 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     std::size_t blocksPerGrid =
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
 
-    
+    auto start = std::chrono::system_clock::now();
+
     // Invoke find clusters that will call cluster finding kernel
-    kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
-        cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
+    //kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
+    //    cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
+    /* void (*kernel_find_clusters)(onst cell_container_types::const_view,
+    vecmem::data::jagged_vector_view<unsigned int>,
+    vecmem::data::vector_view<std::size_t>); */
+    void* args[] = {(void*)&cells_view, (void*)&sparse_ccl_indices_view, (void*)&cl_per_module_prefix_view};
+    cudaLaunchKernel((void*)kernels::find_clusters,dim3(1,1,blocksPerGrid),dim3(1,1,threadsPerBlock),
+        args,0,NULL);
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> time =
             end - start;
-    std::cout<<"Time "<< time.count()<<std::endl;
+    std::cout<<"Time0 "<< time.count()<<std::endl;
+    CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> time2 =
+            end2 - start;
+    std::cout<<"Time2 "<< time2.count()<<std::endl;
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum =
         device::get_prefix_sum(cell_sizes, m_mr.get());
@@ -181,13 +194,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy(vecmem::get_data(cells_prefix_sum), cells_prefix_sum_buff,
          vecmem::copy::type::copy_type::host_to_device);
 
-    // Wait here for the cluster_finding kernel to finish
+    /* // Wait here for the cluster_finding kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     auto end2 = std::chrono::system_clock::now();
     std::chrono::duration<double> time2 =
             end2 - start;
-    std::cout<<"Time2 "<< time2.count()<<std::endl;
+    std::cout<<"Time2 "<< time2.count()<<std::endl; */
     // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
     vecmem::vector<std::size_t> cl_per_module_prefix_host(&m_mr.get());
