@@ -31,6 +31,7 @@
 // vecmem
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // System include(s).
 #include <chrono>
@@ -73,6 +74,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
+    vecmem::binary_page_memory_resource bpmr(mng_mr);
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
@@ -101,7 +103,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           common_opts.input_data_format,
-                                          surface_transforms, digi_cfg, mng_mr);
+                                          surface_transforms, digi_cfg, bpmr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
