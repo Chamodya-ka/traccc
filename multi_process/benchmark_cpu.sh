@@ -44,8 +44,8 @@ do
 	p=$((($i % ($cores * $threads))))
 	echo " processor id $p";
 	# end get processor id
-	../build/bin/traccc_cpu_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
-	#taskset -c $p ../build/bin/traccc_cpu_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
+	#../build/bin/traccc_cpu_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
+	taskset -c $p ../build/bin/traccc_cpu_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
 done
 wait
 Tend=$(date "+%s.%3N")

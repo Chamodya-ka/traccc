@@ -103,7 +103,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           common_opts.input_data_format,
-                                          surface_transforms, digi_cfg, bpmr);
+                                          surface_transforms, digi_cfg, mng_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =

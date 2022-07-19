@@ -25,6 +25,7 @@ Tstart=$(date "+%s.%3N")
 
 for((i=0;i<num_proc;i++))
 do
+	: '
 	# get processor id	
 	if [ $threads -eq 2 ];then
 		X=$(($i/$cores))
@@ -42,7 +43,9 @@ do
 		p=$((($i % $cores)))
 	fi
 	# end get processor id
-
+	'
+	p=$((($i % ($cores * $threads))))
+	echo " processor id $p";
 	# get gpu id
 	gpu_id=$(($i % $numgpus))
 	echo "gpu $gpu_id";
@@ -54,4 +57,4 @@ wait
 Tend=$(date "+%s.%3N")
 elapsed=$(echo "scale=3; $Tend - $Tstart" | bc)
 python3 log_data.py $num_proc $events $elapsed $cores $threads cuda
-#echo "Elapsed: $elapsed ms"
+echo "Elapsed: $elapsed s"
