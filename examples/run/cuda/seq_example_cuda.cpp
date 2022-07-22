@@ -70,6 +70,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     float seeding_cuda(0);
     float tp_estimating_cpu(0);
     float tp_estimating_cuda(0);
+    float sp_copying_time(0);
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
@@ -109,34 +110,38 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
             end_file_reading_cpu - start_file_reading_cpu;
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
-
+       
+        traccc::clusterization_algorithm::output_type measurements_per_event;
+        traccc::spacepoint_formation::output_type spacepoints_per_event;
         /*-----------------------------
               Clusterization (cpu)
           -----------------------------*/
-
-        /*time*/ auto start_clusterization_cpu =
+        if (run_cpu){
+            /*time*/ auto start_clusterization_cpu =
             std::chrono::system_clock::now();
 
-        auto measurements_per_event = ca(cells_per_event);
+            auto measurements_per_event = ca(cells_per_event);
 
-        /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_clusterization_cpu =
-            end_clusterization_cpu - start_clusterization_cpu;
-        /*time*/ clusterization_cpu += time_clusterization_cpu.count();
+            /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_clusterization_cpu =
+                end_clusterization_cpu - start_clusterization_cpu;
+            /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
-        /*---------------------------------
-               Spacepoint formation (cpu)
-          ---------------------------------*/
+            /*---------------------------------
+                Spacepoint formation (cpu)
+            ---------------------------------*/
 
-        /*time*/ auto start_sp_formation_cpu = std::chrono::system_clock::now();
+            /*time*/ auto start_sp_formation_cpu = std::chrono::system_clock::now();
 
-        auto spacepoints_per_event = sf(measurements_per_event);
+            auto spacepoints_per_event = sf(measurements_per_event);
 
-        /*time*/ auto end_sp_formation_cpu = std::chrono::system_clock::now();
-        /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
-            end_sp_formation_cpu - start_sp_formation_cpu;
-        /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
-
+            /*time*/ auto end_sp_formation_cpu = std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
+                end_sp_formation_cpu - start_sp_formation_cpu;
+            /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
+        }
+        
+ 
         /*-----------------------------
               Clusterization and Spacepoint Creation (cuda)
           -----------------------------*/
@@ -216,12 +221,18 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
           compare cpu and cuda result
           ----------------------------------*/
         // Convering spacepoints container buffer to host
+        /*time*/ auto start_sp_copy =
+            std::chrono::system_clock::now();
         vecmem::copy copy;
         traccc::spacepoint_container_types::host spacepoints_cuda(&mng_mr);
         copy(spacepoints_per_event_cuda.headers,
              spacepoints_cuda.get_headers());
         copy(spacepoints_per_event_cuda.items, spacepoints_cuda.get_items());
 
+        /*time*/ auto end_sp_copy = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> sp_copy =
+            end_sp_copy - start_sp_copy;
+        /*time*/ sp_copying_time += sp_copy.count();
         if (run_cpu) {
             // seeding
             int n_match = 0;
@@ -276,7 +287,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*------------
              Writer
           ------------*/
-
         if (i_cfg.check_seeding_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       i_cfg.digitization_config_file,
@@ -333,6 +343,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     std::cout << "tr_par_esti_time (cuda)   " << std::setw(10) << std::left
               << tp_estimating_cuda << std::endl;
 
+    std::cout << "spacepoint copying time   " << std::setw(10) << std::left
+              << sp_copying_time << std::endl;
+    
     return 0;
 }
 

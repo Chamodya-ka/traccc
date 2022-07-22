@@ -44,7 +44,7 @@ namespace po = boost::program_options;
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
-    /*time*/ auto start_wall_time = std::chrono::system_clock::now();    
+      
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -73,7 +73,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::cuda::clusterization_algorithm ca_cuda(mng_mr);
 
    
-
+    /*time*/ auto start_wall_time = std::chrono::system_clock::now();  
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
