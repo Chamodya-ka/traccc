@@ -20,7 +20,7 @@
 
 // System include(s).
 #include <functional>
-
+#include <fstream>
 namespace traccc::cuda {
 
 /// Seed finding for cuda
@@ -35,7 +35,7 @@ class seed_finding
     /// @param sp_grid spacepoint grid
     /// @param mr vecmem memory resource
     seed_finding(const seedfinder_config& config, vecmem::memory_resource& mr);
-
+    seed_finding(const seedfinder_config& config, vecmem::memory_resource& mr,std::ofstream* logfile);
     /// Callable operator for the seed finding
     ///
     /// @return seed_collection is the vector of seeds per event
@@ -46,6 +46,7 @@ class seed_finding
     seedfinder_config m_seedfinder_config;
     seedfilter_config m_seedfilter_config;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
+    std::ofstream* logfile;
 };
 
 }  // namespace traccc::cuda

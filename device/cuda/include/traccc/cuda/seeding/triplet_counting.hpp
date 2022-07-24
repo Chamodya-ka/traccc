@@ -16,7 +16,7 @@
 #include "traccc/seeding/detail/triplet.hpp"
 #include "traccc/seeding/doublet_finding_helper.hpp"
 #include "traccc/seeding/triplet_finding_helper.hpp"
-
+#include "fstream"
 namespace traccc {
 namespace cuda {
 
@@ -37,7 +37,8 @@ void triplet_counting(
     sp_grid_const_view internal_sp_view,
     device::doublet_counter_container_types::const_view dcc_view,
     doublet_container_view mbc_view, doublet_container_view mtc_view,
-    triplet_counter_container_view tcc_view, vecmem::memory_resource& resource);
+    triplet_counter_container_view tcc_view, vecmem::memory_resource& resource,
+    std::ofstream* logfile=NULL);
 
 }  // namespace cuda
 }  // namespace traccc

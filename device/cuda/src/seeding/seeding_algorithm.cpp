@@ -57,11 +57,17 @@ namespace traccc::cuda {
 seeding_algorithm::seeding_algorithm(vecmem::memory_resource& mr)
     : m_spacepoint_binning(default_seedfinder_config(),
                            default_spacepoint_grid_config(), mr),
-      m_seed_finding(default_seedfinder_config(), mr) {}
+      m_seed_finding(default_seedfinder_config(), mr), logfile(NULL) {printf("HERE!");}
+
+seeding_algorithm::seeding_algorithm(vecmem::memory_resource& mr, std::ofstream* logfile)
+    : m_spacepoint_binning(default_seedfinder_config(),
+                           default_spacepoint_grid_config(), mr, logfile),
+      m_seed_finding(default_seedfinder_config(), mr, logfile) ,
+      logfile(logfile){}
 
 seeding_algorithm::output_type seeding_algorithm::operator()(
     const spacepoint_container_types::view& spacepoints) const {
-
+    
     return m_seed_finding(spacepoints, m_spacepoint_binning(spacepoints));
 }
 

@@ -29,7 +29,7 @@
 // System include(s).
 #include <algorithm>
 #include <vector>
-
+#include <iostream>
 namespace traccc::cuda {
 namespace kernels {
 
@@ -60,12 +60,14 @@ __global__ void find_doublets(
 
 seed_finding::seed_finding(const seedfinder_config& config,
                            vecmem::memory_resource& mr)
-    : m_seedfinder_config(config), m_mr(mr) {}
-
+    : m_seedfinder_config(config), m_mr(mr), logfile(NULL) {}
+seed_finding::seed_finding(const seedfinder_config& config,
+                           vecmem::memory_resource& mr, std::ofstream* logfile)
+    : m_seedfinder_config(config), m_mr(mr), logfile(logfile) {}
 seed_finding::output_type seed_finding::operator()(
     const spacepoint_container_types::view& spacepoints,
     const sp_grid_const_view& g2_view) const {
-
+     
     // Helper object for the data management.
     vecmem::copy copy;
 
@@ -85,14 +87,19 @@ seed_finding::output_type seed_finding::operator()(
     const unsigned int nDoubletCountThreads = WARP_SIZE * 2;
     const unsigned int nDoubletCountBlocks =
         sp_grid_prefix_sum.size() / nDoubletCountThreads + 1;
-
+    auto start_count_doublets =
+            std::chrono::system_clock::now();
     // Count the number of doublets that we need to produce.
     kernels::count_doublets<<<nDoubletCountBlocks, nDoubletCountThreads>>>(
         m_seedfinder_config, g2_view, vecmem::get_data(sp_grid_prefix_sum),
         doublet_counter_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end_count_doublets =
+        std::chrono::system_clock::now();
+    std::chrono::duration<double> time_count_doublets =
+            end_count_doublets - start_count_doublets;
+    *logfile<<time_count_doublets.count()<<",";
     // Get the summary values per bin.
     vecmem::vector<device::doublet_counter_header> doublet_counts(
         &(m_mr.get()));
@@ -111,15 +118,22 @@ seed_finding::output_type seed_finding::operator()(
     const unsigned int nDoubletFindThreads = WARP_SIZE * 2;
     const unsigned int nDoubletFindBlocks =
         doublet_prefix_sum.size() / nDoubletFindThreads + 1;
-
+    auto start_find_doublets =
+            std::chrono::system_clock::now();
     // Find all of the spacepoint doublets.
     kernels::find_doublets<<<nDoubletFindBlocks, nDoubletFindThreads>>>(
         m_seedfinder_config, g2_view, doublet_counter_buffer,
         vecmem::get_data(doublet_prefix_sum), doublet_buffers.middleBottom,
         doublet_buffers.middleTop);
+    
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end_find_doublets =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_find_doublets =
+            end_find_doublets - start_find_doublets;
+    *logfile<<time_find_doublets.count()<<",";
+    
     vecmem::vector<doublet_per_bin> mb_headers(&m_mr.get());
     copy(doublet_buffers.middleBottom.headers, mb_headers);
 
@@ -137,8 +151,8 @@ seed_finding::output_type seed_finding::operator()(
     traccc::cuda::triplet_counting(
         m_seedfinder_config, mb_headers, g2_view, doublet_counter_buffer,
         doublet_buffers.middleBottom, doublet_buffers.middleTop, tcc_buffer,
-        m_mr.get());
-
+        m_mr.get(),logfile);
+    std::cout<<"here1"<<std::endl;
     // Take header of the triplet counter container buffer into host
     vecmem::vector<triplet_counter_per_bin> tcc_headers(&m_mr.get());
     copy(tcc_buffer.headers, tcc_headers);
@@ -159,16 +173,16 @@ seed_finding::output_type seed_finding::operator()(
     traccc::cuda::triplet_finding(
         m_seedfinder_config, m_seedfilter_config, tcc_headers, g2_view,
         doublet_counter_buffer, doublet_buffers.middleBottom,
-        doublet_buffers.middleTop, tcc_buffer, tc_buffer, m_mr.get());
-
+        doublet_buffers.middleTop, tcc_buffer, tc_buffer, m_mr.get(),logfile);
+    
     // Take header of the triplet container buffer into host
     vecmem::vector<triplet_per_bin> tc_headers(&m_mr.get());
     copy(tc_buffer.headers, tc_headers);
 
     // Run weight updating
     traccc::cuda::weight_updating(m_seedfilter_config, tc_headers, g2_view,
-                                  tcc_buffer, tc_buffer, m_mr.get());
-
+                                  tcc_buffer, tc_buffer, m_mr.get(),logfile);
+    
     // Get the number of seeds (triplets)
     auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
                                       n_triplets_per_bin.end(), 0);
@@ -180,12 +194,12 @@ seed_finding::output_type seed_finding::operator()(
     // Run seed selecting
     traccc::cuda::seed_selecting(
         m_seedfilter_config, doublet_counts, spacepoints, g2_view,
-        doublet_counter_buffer, tcc_buffer, tc_buffer, seed_buffer, m_mr.get());
+        doublet_counter_buffer, tcc_buffer, tc_buffer, seed_buffer, m_mr.get(),logfile);
 
     // Take seed buffer into seed collection
     host_seed_collection seed_collection(&m_mr.get());
     copy(seed_buffer, seed_collection);
-
+    
     return seed_collection;
 }
 

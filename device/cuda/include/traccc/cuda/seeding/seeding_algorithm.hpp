@@ -19,6 +19,8 @@
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 
+#include <fstream>
+
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
@@ -31,7 +33,7 @@ class seeding_algorithm : public algorithm<host_seed_collection(
     /// @param mr The memory resource to use
     ///
     seeding_algorithm(vecmem::memory_resource& mr);
-
+    seeding_algorithm(vecmem::memory_resource& mr,std::ofstream* logfile);
     /// Operator executing the algorithm.
     ///
     /// @param spacepoint All spacepoints in the event
@@ -45,7 +47,7 @@ class seeding_algorithm : public algorithm<host_seed_collection(
     spacepoint_binning m_spacepoint_binning;
     /// Sub-algorithm performing the seed finding
     seed_finding m_seed_finding;
-
+    std::ofstream* logfile;
 };  // class seeding_algorithm
 
 }  // namespace traccc::cuda

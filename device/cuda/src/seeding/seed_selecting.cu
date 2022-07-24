@@ -17,7 +17,7 @@
 
 // System include(s).
 #include <algorithm>
-
+#include <fstream>
 namespace traccc {
 namespace cuda {
 
@@ -47,7 +47,8 @@ void seed_selecting(
     device::doublet_counter_container_types::const_view dcc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
-    vecmem::memory_resource& resource) {
+    vecmem::memory_resource& resource,
+    std::ofstream* logfile=NULL) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -72,7 +73,8 @@ void seed_selecting(
     // spacepoint
     unsigned int sh_mem =
         sizeof(triplet) * num_threads * filter_config.max_triplets_per_spM;
-
+    auto start_seed_selecting_kernel =
+            std::chrono::system_clock::now();
     // run the kernel
     seed_selecting_kernel<<<num_blocks, num_threads, sh_mem>>>(
         filter_config, spacepoints_view, internal_sp_view, dcc_view, tcc_view,
@@ -80,6 +82,13 @@ void seed_selecting(
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_seed_selecting_kernel =
+        std::chrono::system_clock::now();
+    std::chrono::duration<double> time_seed_selecting_kernel =
+        end_seed_selecting_kernel - start_seed_selecting_kernel;
+    if (logfile)
+    *logfile<<time_seed_selecting_kernel.count()<<",";
+    std::cout<<"seedselecting "<<time_seed_selecting_kernel.count()<<std::endl;
 }
 
 __global__ void seed_selecting_kernel(

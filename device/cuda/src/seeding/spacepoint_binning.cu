@@ -16,7 +16,7 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-
+#include <iostream>
 namespace traccc::cuda {
 namespace kernels {
 
@@ -49,11 +49,16 @@ __global__ void populate_grid(
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
     vecmem::memory_resource& mr)
-    : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr) {}
+    : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr), logfile(NULL) {}
+
+spacepoint_binning::spacepoint_binning(
+    const seedfinder_config& config, const spacepoint_grid_config& grid_config,
+    vecmem::memory_resource& mr,std::ofstream* logfile)
+    : m_config(config), m_axes(get_axes(grid_config, mr)), m_mr(mr),logfile(logfile) {}
 
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_container_types::view& sp_data) const {
-
+    std::cout<<"here2"<<std::endl; 
     // Helper object for the data management.
     vecmem::copy copy;
 
@@ -70,14 +75,19 @@ sp_grid_buffer spacepoint_binning::operator()(
     // Calculate the number of threads and thread blocks to run the kernels for.
     const unsigned int num_threads = WARP_SIZE * 8;
     const unsigned int num_blocks = sp_prefix_sum.size() / num_threads + 1;
-
+    auto start_count_grid_capacities =
+            std::chrono::system_clock::now();
     // Fill the grid capacity container.
     kernels::count_grid_capacities<<<num_blocks, num_threads>>>(
         m_config, m_axes.first, m_axes.second, sp_data, sp_prefix_sum_view,
         vecmem::get_data(grid_capacities));
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end_count_grid_capacities =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_count_grid_capacities =
+            end_count_grid_capacities - start_count_grid_capacities;
+    *logfile<<time_count_grid_capacities.count()<<",";    
     // Create the grid buffer.
     sp_grid_buffer grid_buffer(m_axes.first, m_axes.second,
                                std::vector<std::size_t>(grid_bins, 0),
@@ -86,12 +96,18 @@ sp_grid_buffer spacepoint_binning::operator()(
                                m_mr.get());
     copy.setup(grid_buffer._buffer);
 
+    auto start_populate_grid =
+            std::chrono::system_clock::now();
     // Populate the grid.
     kernels::populate_grid<<<num_blocks, num_threads>>>(
         m_config, sp_data, sp_prefix_sum_view, grid_buffer);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end_populate_grid =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_populate_grid =
+            end_populate_grid - start_populate_grid;
+    *logfile<<time_populate_grid.count()<<",";
     // Return the freshly filled buffer.
     return grid_buffer;
 }

@@ -7,7 +7,7 @@
 
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/definitions.hpp"
-
+#include <chrono>
 namespace traccc {
 namespace cuda {
 
@@ -39,14 +39,20 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // The dimension of grid is number_of_seeds / num_threads + 1
     unsigned int num_blocks = seeds.size() / num_threads + 1;
 
+
     // run the kernel
     track_params_estimating_kernel<<<num_blocks, num_threads>>>(
         spacepoints_view, seeds_view, params_view);
-
+    auto start_track_param_est =
+            std::chrono::system_clock::now();
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end_track_param_est =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_end_track_param_est =
+            end_track_param_est - start_track_param_est;
+    *logfile<<time_end_track_param_est.count()<<",";
     return params;
 }
 

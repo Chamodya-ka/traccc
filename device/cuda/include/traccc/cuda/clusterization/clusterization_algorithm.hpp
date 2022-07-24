@@ -17,7 +17,7 @@
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
-
+#include <fstream>
 //// Traccc library include(s).
 //#include "traccc/utils/memory_resource.hpp"
 
@@ -32,6 +32,7 @@ class clusterization_algorithm
     ///
     /// @param mr is a memory resource (device)
     clusterization_algorithm(vecmem::memory_resource& mr);
+    clusterization_algorithm(vecmem::memory_resource& mr, std::ofstream* logfile);
 
     /// Callable operator for clusterization algorithm
     ///
@@ -44,6 +45,8 @@ class clusterization_algorithm
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
+    //std::reference_wrapper<std::ofstream> logfile;
+    std::ofstream* logfile;
 };
 
 }  // namespace traccc::cuda

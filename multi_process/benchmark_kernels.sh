@@ -53,10 +53,10 @@ do
 	echo " gpu $gpu_id";
 	# end get gpu id
 	if [ -z $log_dir ];then
-		#CUDA_VISIBLE_DEVICES=$gpu_id taskset -c $p ../build/bin/traccc_cuda_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
+		CUDA_VISIBLE_DEVICES=$gpu_id taskset -c $p ../build/bin/traccc_cuda_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
 	else
 		#mkdir ./kernel_logs_$Tstart/$n
-		CUDA_VISIBLE_DEVICES=$gpu_id taskset -c $p nvprof -o $log_dir/$i ../build/bin/traccc_cuda_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
+		CUDA_VISIBLE_DEVICES=$gpu_id taskset -c $p ../build/bin/traccc_cuda_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --u_id=$i --log_time=$log_dir --input-binary  &
 	fi
 done
 wait

@@ -8,6 +8,7 @@
 #include "traccc/cuda/seeding/triplet_counting.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
 
+
 namespace traccc {
 namespace cuda {
 
@@ -48,19 +49,26 @@ void triplet_counting(
     device::doublet_counter_container_types::const_view dcc_view,
     doublet_container_view mbc_view, doublet_container_view mtc_view,
     triplet_counter_container_view tcc_view,
-    vecmem::memory_resource& resource) {
+    vecmem::memory_resource& resource, std::ofstream* logfile) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
     unsigned int num_threads = WARP_SIZE * 2;
     unsigned int num_blocks = nbins / num_threads + 1;
 
+    auto start_set_zero_kernel =
+            std::chrono::system_clock::now();
+
     // zero initialization
     set_zero_kernel<<<num_blocks, num_threads>>>(tcc_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end_set_zero_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_set_zero_kernel =
+            end_set_zero_kernel - start_set_zero_kernel;
+    *logfile<<time_set_zero_kernel.count()<<",";
     // The thread-block is desinged to make each thread count triplets per
     // middle-bot doublet
 
@@ -77,7 +85,8 @@ void triplet_counting(
     for (size_t i = 0; i < nbins; ++i) {
         num_blocks += mbc_headers[i].n_doublets / num_threads + 1;
     }
-
+    auto start_triplet_counting_kernel =
+            std::chrono::system_clock::now();
     // run the kernel
     triplet_counting_kernel<<<num_blocks, num_threads>>>(
         config, internal_sp_view, dcc_view, mbc_view, mtc_view, tcc_view);
@@ -85,6 +94,11 @@ void triplet_counting(
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_triplet_counting_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_triplet_counting_kernel =
+            end_triplet_counting_kernel - start_triplet_counting_kernel;
+    *logfile<<time_triplet_counting_kernel.count()<<",";
 }
 
 __global__ void triplet_counting_kernel(

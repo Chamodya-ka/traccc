@@ -9,6 +9,7 @@
 
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include <fstream>
 
 namespace traccc {
 namespace cuda {
@@ -21,8 +22,8 @@ struct track_params_estimation
     /// Constructor for track_params_estimation
     ///
     /// @param mr is the memory resource
-    track_params_estimation(vecmem::memory_resource& mr) : m_mr(mr) {}
-
+    track_params_estimation(vecmem::memory_resource& mr) : m_mr(mr), logfile(NULL) {}
+    track_params_estimation(vecmem::memory_resource& mr,std::ofstream* logfile) : m_mr(mr), logfile(logfile) {}
     /// Callable operator for track_params_esitmation
     ///
     /// @param input_type is the seed container
@@ -34,6 +35,7 @@ struct track_params_estimation
 
     private:
     std::reference_wrapper<vecmem::memory_resource> m_mr;
+    std::ofstream* logfile;
 };
 
 }  // namespace cuda

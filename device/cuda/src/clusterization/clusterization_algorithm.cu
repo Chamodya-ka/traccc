@@ -21,7 +21,7 @@
 
 // System include(s).
 #include <algorithm>
-
+#include <chrono>
 // Local include(s)
 #include "traccc/cuda/utils/definitions.hpp"
 
@@ -84,15 +84,19 @@ __global__ void form_spacepoints(
 
 }  // namespace kernels
 
+
 clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr)
-    : m_mr(mr) {}
+    : m_mr(mr),logfile(NULL) {}
+
+clusterization_algorithm::clusterization_algorithm(vecmem::memory_resource& mr, std::ofstream* logfile)
+    : m_mr(mr),logfile(logfile) {}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::host& cells_per_event) const {
 
     // Vecmem copy object for moving the data between host and device
     vecmem::copy copy;
-
+    //std::ofstream log_file = *logfile;
     // Number of modules
     unsigned int num_modules = cells_per_event.size();
 
@@ -161,11 +165,17 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
 
     // Invoke find clusters that will call cluster finding kernel
+    auto find_clusters_start = std::chrono::system_clock::now();
     kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
     // Check for kernel launch errors
     CUDA_ERROR_CHECK(cudaGetLastError());
-
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize()); // moved here to get kernel execution time accurately
+    auto find_clusters_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> find_clusters_time =
+            find_clusters_end - find_clusters_start;
+    
+    *logfile << find_clusters_time.count() << ",";
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum =
         device::get_prefix_sum(cell_sizes, m_mr.get());
@@ -176,7 +186,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
          vecmem::copy::type::copy_type::host_to_device);
 
     // Wait here for the cluster_finding kernel to finish
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    //CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Copy the sizes of clusters per module to the host
     // and create a copy of "clusters per module" vector
@@ -213,6 +223,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     blocksPerGrid =
         (cells_prefix_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
     // Invoke cluster counting will call count cluster cells kernel
+    auto count_cluster_cells_start = std::chrono::system_clock::now();
     kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock>>>(
         sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, cluster_sizes_view);
@@ -220,7 +231,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto count_cluster_cells_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> count_cluster_cells_time =
+            count_cluster_cells_end - count_cluster_cells_start;
+    *logfile << count_cluster_cells_time.count() << ",";
     // Copy cluster sizes back to the host
     std::vector<unsigned int> cluster_sizes;
     copy(cluster_sizes_buffer, cluster_sizes,
@@ -240,11 +254,17 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Using previous block size and thread size (64)
     // Invoke connect components will call connect components kernel
+    auto connect_components_start = std::chrono::system_clock::now();
     kernels::connect_components<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view,
         cells_prefix_sum_view, clusters_view);
     // Check for kernel launch errors
     CUDA_ERROR_CHECK(cudaGetLastError());
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize()); // moved here to get accurate kernel times
+    auto connect_components_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> connect_components_time =
+            connect_components_end - connect_components_start;
+    *logfile << connect_components_time.count() << ",";
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.get()},
@@ -263,7 +283,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     copy.setup(spacepoints_buffer.items);
 
     // Wait here for the component connection kernel to finish
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    //CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     // Create views to pass to measurement creation kernel
     measurement_container_types::view measurements_view = measurements_buffer;
@@ -273,6 +293,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         (clusters_view.headers.size() - 1 + threadsPerBlock) / threadsPerBlock;
 
     // Invoke measurements creation will call create measurements kernel
+    auto create_measurements_start = std::chrono::system_clock::now();
     kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, clusters_view, measurements_view);
 
@@ -280,7 +301,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // creation kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto create_measurements_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> create_measurements_time =
+            create_measurements_end - create_measurements_start;
+    *logfile << create_measurements_time.count() << ",";
     // Get the prefix sum of the measurements and copy it to the device buffer
     const device::prefix_sum_t meas_prefix_sum = device::get_prefix_sum(
         copy.get_sizes(measurements_buffer.items), m_mr.get());
@@ -297,8 +321,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // Using the same grid size as before
     // Invoke spacepoint formation will call form_spacepoints kernel
+    auto form_spacepoints_start = std::chrono::system_clock::now();
     kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock>>>(
         measurements_view, meas_prefix_sum_view, spacepoints_view);
+    auto form_spacepoints_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> form_spacepoints_time =
+            form_spacepoints_end - form_spacepoints_start;
+    *logfile << form_spacepoints_time.count() << ",";
     // Check for kernel launch errors and Wait for the spacepoint formation
     // kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());

@@ -19,6 +19,7 @@
 // System include(s).
 #include <functional>
 #include <utility>
+#include <fstream>
 
 namespace traccc::cuda {
 
@@ -31,7 +32,9 @@ class spacepoint_binning : public algorithm<sp_grid_buffer(
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
                        vecmem::memory_resource& mr);
-
+    spacepoint_binning(const seedfinder_config& config,
+                       const spacepoint_grid_config& grid_config,
+                       vecmem::memory_resource& mr, std::ofstream* logfile);
     /// Function executing the algorithm
     sp_grid_buffer operator()(
         const spacepoint_container_types::view& sp_data) const override;
@@ -40,7 +43,7 @@ class spacepoint_binning : public algorithm<sp_grid_buffer(
     seedfinder_config m_config;
     std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;
     std::reference_wrapper<vecmem::memory_resource> m_mr;
-
+    std::ofstream* logfile;
 };  // class spacepoint_binning
 
 }  // namespace traccc::cuda

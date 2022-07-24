@@ -8,7 +8,7 @@
 #include "traccc/cuda/seeding/weight_updating.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
 #include "traccc/cuda/utils/definitions.hpp"
-
+#include <iostream>
 namespace traccc {
 namespace cuda {
 
@@ -30,7 +30,7 @@ void weight_updating(const seedfilter_config& filter_config,
                      sp_grid_const_view internal_sp_view,
                      triplet_counter_container_view tcc_view,
                      triplet_container_view tc_view,
-                     vecmem::memory_resource& resource) {
+                     vecmem::memory_resource& resource,std::ofstream* logfile) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -54,6 +54,8 @@ void weight_updating(const seedfilter_config& filter_config,
     // shared memory assignment for the radius of the compatible top spacepoints
     unsigned int sh_mem = sizeof(scalar) * filter_config.compatSeedLimit;
 
+    auto start_weight_updating_kernel =
+            std::chrono::system_clock::now();
     // run the kernel
     weight_updating_kernel<<<num_blocks, num_threads, sh_mem>>>(
         filter_config, internal_sp_view, tcc_view, tc_view);
@@ -61,6 +63,13 @@ void weight_updating(const seedfilter_config& filter_config,
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_weight_updating_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_weight_updating_kernel =
+            end_weight_updating_kernel - start_weight_updating_kernel;
+    if(logfile)
+    *logfile<<time_weight_updating_kernel.count()<<",";
+    std::cout<<"weight updating "<<time_weight_updating_kernel.count()<<std::endl;
 }
 
 __global__ void weight_updating_kernel(

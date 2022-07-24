@@ -7,6 +7,7 @@
 
 #include "traccc/cuda/seeding/triplet_finding.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
+#include <iostream>
 
 namespace traccc {
 namespace cuda {
@@ -51,19 +52,27 @@ void triplet_finding(
     device::doublet_counter_container_types::const_view dcc_view,
     doublet_container_view mbc_view, doublet_container_view mtc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
-    vecmem::memory_resource& resource) {
+    vecmem::memory_resource& resource, std::ofstream* logfile) {
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
     unsigned int num_threads = WARP_SIZE * 2;
     unsigned int num_blocks = nbins / num_threads + 1;
-
+    auto start_set_zero_kernel =
+            std::chrono::system_clock::now();
     // zero initialization
     set_zero_kernel<<<num_blocks, num_threads>>>(tc_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    auto end_set_zero_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_set_zero_kernel =
+            end_set_zero_kernel - start_set_zero_kernel;
+    
+    std::cout<<"3let set zero"<<time_set_zero_kernel.count()<<std::endl;
+    if (logfile)
+    *logfile<<time_set_zero_kernel.count()<<",";
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
 
@@ -83,7 +92,8 @@ void triplet_finding(
 
     // shared memory assignment for the number of triplets per thread
     unsigned int sh_mem = sizeof(int) * num_threads;
-
+    auto start_triplet_finding_kernel =
+            std::chrono::system_clock::now();
     // run the kernel
     triplet_finding_kernel<<<num_blocks, num_threads, sh_mem>>>(
         config, filter_config, internal_sp_view, dcc_view, mbc_view, mtc_view,
@@ -92,6 +102,12 @@ void triplet_finding(
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_triplet_finding_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_triplet_finding_kernel =
+            end_triplet_finding_kernel - start_triplet_finding_kernel;
+    if (logfile)
+    *logfile<<time_triplet_finding_kernel.count()<<",";
 }
 
 __global__ void triplet_finding_kernel(

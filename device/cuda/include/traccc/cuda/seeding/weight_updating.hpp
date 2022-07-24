@@ -12,7 +12,7 @@
 #include "traccc/seeding/detail/seeding_config.hpp"
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
-
+#include <fstream>
 namespace traccc {
 namespace cuda {
 
@@ -30,7 +30,8 @@ void weight_updating(const seedfilter_config& filter_config,
                      sp_grid_const_view internal_sp_view,
                      triplet_counter_container_view tcc_view,
                      triplet_container_view tc_view,
-                     vecmem::memory_resource& resource);
+                     vecmem::memory_resource& resource,
+                     std::ofstream* logfile=NULL);
 
 }  // namespace cuda
 }  // namespace traccc
