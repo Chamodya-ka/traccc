@@ -88,7 +88,6 @@ void seed_selecting(
         end_seed_selecting_kernel - start_seed_selecting_kernel;
     if (logfile)
     *logfile<<time_seed_selecting_kernel.count()<<",";
-    std::cout<<"seedselecting "<<time_seed_selecting_kernel.count()<<std::endl;
 }
 
 __global__ void seed_selecting_kernel(

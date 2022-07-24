@@ -29,7 +29,6 @@
 // System include(s).
 #include <algorithm>
 #include <vector>
-#include <iostream>
 namespace traccc::cuda {
 namespace kernels {
 
@@ -152,7 +151,6 @@ seed_finding::output_type seed_finding::operator()(
         m_seedfinder_config, mb_headers, g2_view, doublet_counter_buffer,
         doublet_buffers.middleBottom, doublet_buffers.middleTop, tcc_buffer,
         m_mr.get(),logfile);
-    std::cout<<"here1"<<std::endl;
     // Take header of the triplet counter container buffer into host
     vecmem::vector<triplet_counter_per_bin> tcc_headers(&m_mr.get());
     copy(tcc_buffer.headers, tcc_headers);

@@ -7,7 +7,6 @@
 
 #include "traccc/cuda/seeding/triplet_finding.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
-#include <iostream>
 
 namespace traccc {
 namespace cuda {
@@ -70,7 +69,6 @@ void triplet_finding(
     std::chrono::duration<double> time_set_zero_kernel =
             end_set_zero_kernel - start_set_zero_kernel;
     
-    std::cout<<"3let set zero"<<time_set_zero_kernel.count()<<std::endl;
     if (logfile)
     *logfile<<time_set_zero_kernel.count()<<",";
     // The thread-block is desinged to make each thread find triplets per

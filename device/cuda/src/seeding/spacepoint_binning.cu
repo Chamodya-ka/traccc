@@ -16,7 +16,6 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-#include <iostream>
 namespace traccc::cuda {
 namespace kernels {
 
@@ -58,7 +57,6 @@ spacepoint_binning::spacepoint_binning(
 
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_container_types::view& sp_data) const {
-    std::cout<<"here2"<<std::endl; 
     // Helper object for the data management.
     vecmem::copy copy;
 

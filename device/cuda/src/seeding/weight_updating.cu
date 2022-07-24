@@ -8,7 +8,6 @@
 #include "traccc/cuda/seeding/weight_updating.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
 #include "traccc/cuda/utils/definitions.hpp"
-#include <iostream>
 namespace traccc {
 namespace cuda {
 
@@ -69,7 +68,6 @@ void weight_updating(const seedfilter_config& filter_config,
             end_weight_updating_kernel - start_weight_updating_kernel;
     if(logfile)
     *logfile<<time_weight_updating_kernel.count()<<",";
-    std::cout<<"weight updating "<<time_weight_updating_kernel.count()<<std::endl;
 }
 
 __global__ void weight_updating_kernel(
