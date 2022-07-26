@@ -16,6 +16,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/definitions.hpp"
   "include/traccc/cuda/utils/cuda_helper.cuh"
+  "include/traccc/cuda/utils/initialize_cuda.cuh"
+  "src/initialize_cuda.cu"
   # Seed finding code.
   "include/traccc/cuda/seeding/detail/triplet_counter.hpp"
   "include/traccc/cuda/seeding/weight_updating.hpp"

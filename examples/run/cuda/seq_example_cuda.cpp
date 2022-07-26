@@ -38,6 +38,7 @@
 #include <iomanip>
 #include <iostream>
 
+#include "traccc/cuda/utils/initialize_cuda.cuh"
 namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
@@ -90,7 +91,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     sd_performance_writer.add_cache("CUDA");
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
-
+    initialize_cuda();
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
