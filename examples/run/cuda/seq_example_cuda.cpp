@@ -21,12 +21,13 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-
+#include "traccc/cuda/utils/initialize_cuda.hpp"
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
+#include "vecmem/memory/contiguous_memory_resource.hpp"
 #include <vecmem/utils/cuda/copy.hpp>
 
 // System include(s).
@@ -39,7 +40,7 @@ namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
-
+    init_cuda();
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
 
@@ -69,14 +70,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     float tp_estimating_cuda(0);
 
     // Memory resource used by the EDM.
+    
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
     vecmem::cuda::host_memory_resource cu_host_mr;
     vecmem::cuda::device_memory_resource cu_dev_mr;
 
+    vecmem::contiguous_memory_resource c_mr(cu_dev_mr,pow(2,31));
     // Struct with memory resources to pass to CUDA algorithms
-    traccc::memory_resource mr{cu_dev_mr, &cu_host_mr};
-
+    traccc::memory_resource mr{cu_dev_mr,&host_mr};
+    //traccc::memory_resource mr{mng_mr};
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
