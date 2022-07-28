@@ -21,6 +21,7 @@
 #include "traccc/options/handle_argument_errors.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/utils/Sync.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -406,6 +407,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 // The main routine
 //
 int main(int argc, char* argv[]) {
+    printf("HERES!");
     // Set up the program options
     po::options_description desc("Allowed options");
 
@@ -415,9 +417,13 @@ int main(int argc, char* argv[]) {
     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
-
+    desc.add_options()("n_proc", po::value<int>()->default_value(1),
+                       "run cpu tracking as well");
+    desc.add_options()("u_id", po::value<int>()->default_value(0),
+                        "run cpu tracking as well");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
+
 
     // Check errors
     traccc::handle_argument_errors(vm, desc);
@@ -426,7 +432,16 @@ int main(int argc, char* argv[]) {
     common_opts.read(vm);
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
-
+    auto n_proc = vm["n_proc"].as<int>();
+    auto u_id = vm["u_id"].as<int>();
+    printf("test begin");
+    Sync sync(n_proc,u_id);
+    printf("uID %i sleeping for %i\n",u_id,u_id);
+    sleep(u_id);
+    sync.complete(u_id);
+    printf("uID %i done\n",u_id);
+    sync.wait_for_other_processes();
+    printf("wait over IPC worked\n");
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
