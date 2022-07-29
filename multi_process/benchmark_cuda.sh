@@ -51,7 +51,7 @@ do
 	gpu_id=$(($i % $numgpus))
 	echo " gpu $gpu_id";
 	# end get gpu id
-	CUDA_VISIBLE_DEVICES=$gpu_id taskset -c $p ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --run-cpu=0 --events=$events --input-binary &
+	CUDA_VISIBLE_DEVICES=$gpu_id taskset -c $p ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/  --run_cpu=0 --events=$events --input-binary &
 	
 done
 wait
