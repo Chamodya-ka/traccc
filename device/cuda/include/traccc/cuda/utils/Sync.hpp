@@ -1,18 +1,21 @@
 #pragma once
-#include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/interprocess/mapped_region.hpp>
+//#include <boost/interprocess/shared_memory_object.hpp>
+//#include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 using namespace boost::interprocess;
 
-class Sync{
-    public:
-        Sync (int n_proc, int u_id);
-        void wait_for_other_processes();
-        void delete_shared_mem();
-        void complete(int u_id);
-    private:
-        shared_memory_object shm_obj;
-        mapped_region region;
-        interprocess_mutex mutex;
-        int n_proc;
-};
+
+namespace Sync{
+    void init_shared_mem(int n_proc, int u_id,unsigned char* mem);
+    void wait_for_other_processes(unsigned char* mem,size_t region_size);
+    void complete(int u_id,unsigned char* mem,size_t region_size);
+    void reset_shared_mem(int u_id,unsigned char* mem);
+    //static shared_memory_object shm_obj;
+    //static mapped_region region;
+    interprocess_mutex mutex;
+    int n_proc;
+}
+
+
+
+

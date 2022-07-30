@@ -6,7 +6,7 @@
 
 # Project include(s).
 include( traccc-compiler-options-cuda )
-
+SET (CMAKE_VERBOSE_MAKEFILE 1)
 traccc_add_executable( seq_example_cuda "seq_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance 
                   traccc::core traccc::cuda traccc::options)

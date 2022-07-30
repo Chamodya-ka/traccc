@@ -5,6 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <boost/exception/diagnostic_information.hpp>
+
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/clusterization/spacepoint_formation.hpp"
@@ -29,7 +33,6 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
-
 // System include(s).
 #include <chrono>
 #include <exception>
@@ -37,7 +40,7 @@
 #include <iostream>
 
 namespace po = boost::program_options;
-
+using namespace boost::interprocess;
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
             const traccc::common_options& common_opts, bool run_cpu) {
 
@@ -406,6 +409,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
 // The main routine
 //
+
 int main(int argc, char* argv[]) {
     printf("HERES!");
     // Set up the program options
@@ -435,12 +439,21 @@ int main(int argc, char* argv[]) {
     auto n_proc = vm["n_proc"].as<int>();
     auto u_id = vm["u_id"].as<int>();
     printf("test begin");
-    Sync sync(n_proc,u_id);
+    //shared_memory_object::remove("shared_memory_2");
+    //boost::interprocess::shared_memory_object shm_obj(open_or_create,"shared_memory",read_write);
+
+    shared_memory_object shm_obj(open_or_create,"shared_memory",read_write);
+    shm_obj.truncate(n_proc);
+    mapped_region region(shm_obj,read_write);
+    unsigned char *mem = static_cast<unsigned char*>(region.get_address());
+    Sync::init_shared_mem(n_proc,u_id,mem);
     printf("uID %i sleeping for %i\n",u_id,u_id);
     sleep(u_id);
-    sync.complete(u_id);
+    Sync::complete(u_id,mem,region.get_size());
     printf("uID %i done\n",u_id);
-    sync.wait_for_other_processes();
+
+    //mem = static_cast<unsigned char*>(region.get_address());
+    Sync::wait_for_other_processes(mem, region.get_size());
     printf("wait over IPC worked\n");
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
@@ -448,4 +461,8 @@ int main(int argc, char* argv[]) {
               << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts, run_cpu);
+    Sync::reset_shared_mem(u_id,mem);
+    Sync::wait_for_other_processes(mem, region.get_size());
+
+    //shared_memory_object::remove("shared_memory");
 }
