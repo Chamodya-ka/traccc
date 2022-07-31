@@ -34,11 +34,20 @@
 #include <exception>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
+#include <string> 
+
+// boost inclues
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+//#include <boost/exception/diagnostic_information.hpp>
+
+#include "traccc/cuda/utils/Sync.hpp"
 
 namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
-            const traccc::common_options& common_opts, bool run_cpu) {
+            const traccc::common_options& common_opts, bool run_cpu, std::ofstream& logfile, unsigned char* mem) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -84,7 +93,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     traccc::cuda::seeding_algorithm sa_cuda(mr);
     traccc::cuda::track_params_estimation tp_cuda(mr);
-    traccc::cuda::clusterization_algorithm ca_cuda(mr);
+    traccc::cuda::clusterization_algorithm ca_cuda(mr,&logfile,mem);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -415,6 +424,13 @@ int main(int argc, char* argv[]) {
     traccc::full_tracking_input_config full_tracking_input_cfg(desc);
     desc.add_options()("run_cpu", po::value<bool>()->default_value(false),
                        "run cpu tracking as well");
+    desc.add_options()("u_id", po::value<int>()->default_value(0),
+                       "unique if of process");
+    desc.add_options()("n_proc", po::value<int>()->default_value(1),
+                       "number of processes in batch");
+    desc.add_options()("log_time", po::value<std::string>()->default_value("0"),
+                       "log tstart time [unique]");
+
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -426,11 +442,37 @@ int main(int argc, char* argv[]) {
     common_opts.read(vm);
     full_tracking_input_cfg.read(vm);
     auto run_cpu = vm["run_cpu"].as<bool>();
+    int u_id = vm["u_id"].as<int>();
+    int n_proc = vm["n_proc"].as<int>();
+    std::string log_time = vm["log_time"].as<std::string>();
+
+    // Setup log file
+    // Does not create directory. Make sure directory is properly created by bash script
+    std::string log_file_path = log_time+"/"+std::to_string(u_id);
+    std::ofstream logfile;
+    logfile.open(log_file_path+".csv", std::ios_base::app); // append instead of overwrite
+    logfile<<"event,file io,find_clusters_kernel,count_cluster_cells,connect_components,create_measurements,form_spacepoints,overall clusterization,count_grid_capacities,populate_grid,count_doublets,find_doublets,set_zero_kernel,triplet_counting_kernel,set_zero_triplet_finding,triplet_finding,weight_updating,seed_selecting,overall_seeding,track_param_est_kernel,overall_track_param_est"<<std::endl;    
+
+    // Set up shared memory
+    struct shm_remove
+    {
+        shm_remove() { boost::interprocess::shared_memory_object::remove("shared_memory"); }
+        ~shm_remove(){ boost::interprocess::shared_memory_object::remove("shared_memory"); }
+    } remover;
+    // create shared memory object
+    boost::interprocess::shared_memory_object shm(boost::interprocess::open_or_create, "shared_memory", boost::interprocess::read_write);
+    // resize shared memory
+    shm.truncate(n_proc);
+    // map the whole shared memory in this process
+    boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
+    // get a pointer to this memory region
+    unsigned char *mem = static_cast<unsigned char*>(region.get_address());
+    Sync::init_shared_mem(n_proc, u_id, region.get_size(), mem);
 
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
-    return seq_run(full_tracking_input_cfg, common_opts, run_cpu);
+    return seq_run(full_tracking_input_cfg, common_opts, run_cpu, logfile, mem);
 }

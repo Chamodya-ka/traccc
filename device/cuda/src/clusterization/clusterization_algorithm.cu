@@ -86,8 +86,8 @@ __global__ void form_spacepoints(
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr)
-    : m_mr(mr) {
+    const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem)
+    : m_mr(mr), logfile(logfile), mem(mem) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
@@ -170,14 +170,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Calculating grid size for cluster finding kernel
     std::size_t blocksPerGrid =
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
-
+    Sync::complete(mem);
+    printf("Waiting find_clusters\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
     // Invoke find clusters that will call cluster finding kernel
     kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
-
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    Sync::reset_shared_mem(mem);
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum = device::get_prefix_sum(
         cell_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
@@ -223,6 +225,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Calclating grid size for cluster counting kernel (block size 64)
     blocksPerGrid =
         (cells_prefix_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
+    Sync::complete(mem);
+    printf("Waiting count_cluster_cells\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
     // Invoke cluster counting will call count cluster cells kernel
     kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock>>>(
         sparse_ccl_indices_view, cl_per_module_prefix_view,
@@ -231,7 +237,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    Sync::reset_shared_mem(mem);
     // Copy cluster sizes back to the host
     std::vector<unsigned int> cluster_sizes;
     (*m_copy)(cluster_sizes_buffer, cluster_sizes,
@@ -249,6 +255,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Create views to pass to component connection kernel
     cluster_container_types::view clusters_view = clusters_buffer;
 
+    Sync::complete(mem);
+    printf("Waiting connect_components\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
     // Using previous block size and thread size (64)
     // Invoke connect components will call connect components kernel
     kernels::connect_components<<<blocksPerGrid, threadsPerBlock>>>(
@@ -256,7 +266,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         cells_prefix_sum_view, clusters_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    Sync::reset_shared_mem(mem);
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.main},
@@ -281,6 +291,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     blocksPerGrid =
         (clusters_view.headers.size() - 1 + threadsPerBlock) / threadsPerBlock;
 
+    Sync::complete(mem);
+    printf("Waiting create_measurements\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+
     // Invoke measurements creation will call create measurements kernel
     kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, clusters_view, measurements_view);
@@ -289,7 +304,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // creation kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-
+    Sync::reset_shared_mem(mem);
     // Get the prefix sum of the measurements and copy it to the device buffer
     const device::prefix_sum_t meas_prefix_sum =
         device::get_prefix_sum(m_copy->get_sizes(measurements_buffer.items),
@@ -305,6 +320,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         meas_prefix_sum_view = meas_prefix_sum_buff;
     spacepoint_container_types::view spacepoints_view = spacepoints_buffer;
 
+    Sync::complete(mem);
+    printf("Waiting form_spacepoints\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
     // Using the same grid size as before
     // Invoke spacepoint formation will call form_spacepoints kernel
     kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock>>>(
@@ -313,6 +332,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    Sync::reset_shared_mem(mem);
     return spacepoints_buffer;
 }
 
