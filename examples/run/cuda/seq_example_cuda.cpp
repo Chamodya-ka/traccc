@@ -468,11 +468,12 @@ int main(int argc, char* argv[]) {
     // get a pointer to this memory region
     unsigned char *mem = static_cast<unsigned char*>(region.get_address());
     Sync::init_shared_mem(n_proc, u_id, region.get_size(), mem);
-
+    printf("%d ID %d \n",u_id, Sync::u_id);
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts, run_cpu, logfile, mem);
+    
 }

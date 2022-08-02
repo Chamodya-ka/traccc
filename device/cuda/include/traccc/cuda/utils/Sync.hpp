@@ -10,6 +10,7 @@ namespace Sync{
     void complete(unsigned char* mem);
     void reset_shared_mem(unsigned char* mem);
     void wait_for_reset(unsigned char* mem);
+    int get_uid();
     //static shared_memory_object shm_obj;
     //static mapped_region region;
     //static boost::interprocess::interprocess_mutex mutex;

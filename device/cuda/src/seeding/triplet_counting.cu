@@ -52,11 +52,11 @@ void triplet_counting(
     vecmem::memory_resource& resource, std::ofstream* logfile, unsigned char* mem) {
 
 
-    /* struct mutex_remove
+    struct mutex_remove
       {
          mutex_remove() { boost::interprocess::named_mutex::remove("triplet_counting"); }
          ~mutex_remove(){ boost::interprocess::named_mutex::remove("triplet_counting"); }
-      } remover; */
+      } remover;
     boost::interprocess::named_mutex mutex_4(boost::interprocess::open_or_create, "triplet_counting");
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
@@ -89,7 +89,7 @@ void triplet_counting(
 
     mutex_4.lock();
     Sync::reset_shared_mem(mem);
-    printf("set_zero_kernel triplet counting Done\n");
+    printf("set_zero_kernel triplet counting Done uid %d \n",Sync::get_uid());
     mutex_4.unlock();
     Sync::wait_for_reset(mem);
     printf("reset complete\n"); 
@@ -112,6 +112,7 @@ void triplet_counting(
 
     mutex_4.lock();
     Sync::complete(mem);
+    printf("%d waiting for triplet counting\n", Sync::get_uid());
     mutex_4.unlock();
     printf("Waiting triplet_counting_kernel\n");
     Sync::wait_for_other_processes(mem);
