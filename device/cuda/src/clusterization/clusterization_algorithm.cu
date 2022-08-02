@@ -25,6 +25,7 @@
 
 // Local include(s)
 #include "traccc/cuda/utils/definitions.hpp"
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 namespace traccc::cuda {
 namespace kernels {
@@ -100,6 +101,13 @@ clusterization_algorithm::clusterization_algorithm(
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const cell_container_types::host& cells_per_event) const {
 
+    /* struct mutex_remove
+      {
+         mutex_remove() { boost::interprocess::named_mutex::remove("clusterization"); }
+         ~mutex_remove(){ boost::interprocess::named_mutex::remove("clusterization"); }
+      } remover; */
+    boost::interprocess::named_mutex mutex(boost::interprocess::open_or_create, "clusterization");
+
     // Vecmem copy object for moving the data between host and device
     vecmem::copy copy;
 
@@ -170,16 +178,31 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Calculating grid size for cluster finding kernel
     std::size_t blocksPerGrid =
         (num_modules + threadsPerBlock - 1) / threadsPerBlock;
+
+    mutex.lock();
     Sync::complete(mem);
+    mutex.unlock();
     printf("Waiting find_clusters\n");
+
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
     // Invoke find clusters that will call cluster finding kernel
+    auto find_clusters_start = std::chrono::system_clock::now();
     kernels::find_clusters<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, sparse_ccl_indices_view, cl_per_module_prefix_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto find_clusters_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> find_clusters_time =
+            find_clusters_end - find_clusters_start;
+    
+    *logfile << find_clusters_time.count() << ",";
+    mutex.lock();
     Sync::reset_shared_mem(mem);
+    printf("find_clusters Done\n");
+    mutex.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n");    
     // Get the prefix sum of the cells and copy it to the device buffer
     const device::prefix_sum_t cells_prefix_sum = device::get_prefix_sum(
         cell_sizes, (m_mr.host ? *(m_mr.host) : m_mr.main));
@@ -225,10 +248,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Calclating grid size for cluster counting kernel (block size 64)
     blocksPerGrid =
         (cells_prefix_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
+    mutex.lock();
     Sync::complete(mem);
+    mutex.unlock();
     printf("Waiting count_cluster_cells\n");
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
+    auto count_cluster_cells_start = std::chrono::system_clock::now();
     // Invoke cluster counting will call count cluster cells kernel
     kernels::count_cluster_cells<<<blocksPerGrid, threadsPerBlock>>>(
         sparse_ccl_indices_view, cl_per_module_prefix_view,
@@ -237,7 +263,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto count_cluster_cells_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> count_cluster_cells_time =
+            count_cluster_cells_end - count_cluster_cells_start;
+    *logfile << count_cluster_cells_time.count() << ",";
+    mutex.lock();
     Sync::reset_shared_mem(mem);
+    printf("count_cluster_cells Done\n");
+    mutex.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n");    
     // Copy cluster sizes back to the host
     std::vector<unsigned int> cluster_sizes;
     (*m_copy)(cluster_sizes_buffer, cluster_sizes,
@@ -255,10 +290,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // Create views to pass to component connection kernel
     cluster_container_types::view clusters_view = clusters_buffer;
 
+    mutex.lock();
     Sync::complete(mem);
+    mutex.unlock();
     printf("Waiting connect_components\n");
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
+    auto connect_components_start = std::chrono::system_clock::now();
     // Using previous block size and thread size (64)
     // Invoke connect components will call connect components kernel
     kernels::connect_components<<<blocksPerGrid, threadsPerBlock>>>(
@@ -266,7 +304,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         cells_prefix_sum_view, clusters_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto connect_components_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> connect_components_time =
+            connect_components_end - connect_components_start;
+    *logfile << connect_components_time.count() << ",";
+    mutex.lock();
     Sync::reset_shared_mem(mem);
+    mutex.unlock();
+    Sync::wait_for_reset(mem);
+    printf("connect_components done \n");  
+    printf("reset complete\n");  
     // Resizable buffer for the measurements
     measurement_container_types::buffer measurements_buffer{
         {num_modules, m_mr.main},
@@ -291,11 +338,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     blocksPerGrid =
         (clusters_view.headers.size() - 1 + threadsPerBlock) / threadsPerBlock;
 
+    mutex.lock();
     Sync::complete(mem);
+    mutex.unlock();
     printf("Waiting create_measurements\n");
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
-
+    auto create_measurements_start = std::chrono::system_clock::now();
     // Invoke measurements creation will call create measurements kernel
     kernels::create_measurements<<<blocksPerGrid, threadsPerBlock>>>(
         cells_view, clusters_view, measurements_view);
@@ -304,7 +353,16 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // creation kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto create_measurements_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> create_measurements_time =
+            create_measurements_end - create_measurements_start;
+    *logfile << create_measurements_time.count() << ",";
+    mutex.lock();
     Sync::reset_shared_mem(mem);
+    mutex.unlock();
+    Sync::wait_for_reset(mem);
+    printf("create_measurements done \n"); 
+    printf("reset complete\n");  
     // Get the prefix sum of the measurements and copy it to the device buffer
     const device::prefix_sum_t meas_prefix_sum =
         device::get_prefix_sum(m_copy->get_sizes(measurements_buffer.items),
@@ -320,10 +378,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         meas_prefix_sum_view = meas_prefix_sum_buff;
     spacepoint_container_types::view spacepoints_view = spacepoints_buffer;
 
+    mutex.lock();
     Sync::complete(mem);
+    mutex.unlock();
     printf("Waiting form_spacepoints\n");
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
+    auto form_spacepoints_start = std::chrono::system_clock::now();
     // Using the same grid size as before
     // Invoke spacepoint formation will call form_spacepoints kernel
     kernels::form_spacepoints<<<blocksPerGrid, threadsPerBlock>>>(
@@ -332,7 +393,15 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     // kernel to finish
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto form_spacepoints_end = std::chrono::system_clock::now();
+    std::chrono::duration<double> form_spacepoints_time =
+            form_spacepoints_end - form_spacepoints_start;
+    *logfile << form_spacepoints_time.count() << ",";
+    mutex.lock();
     Sync::reset_shared_mem(mem);
+    mutex.unlock();
+    printf("form_spacepoints done \n"); 
+    printf("reset complete\n");  
     return spacepoints_buffer;
 }
 

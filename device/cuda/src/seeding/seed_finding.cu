@@ -25,7 +25,7 @@
 
 // VecMem include(s).
 #include "vecmem/utils/cuda/copy.hpp"
-
+#include <boost/interprocess/sync/named_mutex.hpp>
 // System include(s).
 #include <algorithm>
 #include <vector>
@@ -70,6 +70,18 @@ seed_finding::seed_finding(const seedfinder_config& config,
     }
 }
 
+seed_finding::seed_finding(const seedfinder_config& config,
+                           const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem)
+    : m_seedfinder_config(config), m_mr(mr), logfile(logfile), mem(mem) {
+
+    // Initialize m_copy ptr based on memory resources that were given
+    if (mr.host) {
+        m_copy = std::make_unique<vecmem::cuda::copy>();
+    } else {
+        m_copy = std::make_unique<vecmem::copy>();
+    }
+}
+
 vecmem::data::vector_buffer<seed> seed_finding::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& g2_view) const {
@@ -92,6 +104,13 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const sp_grid_const_view& g2_view,
     const std::vector<unsigned int>& grid_sizes) const {
+
+    /* struct mutex_remove
+      {
+         mutex_remove() { boost::interprocess::named_mutex::remove("seed_finding"); }
+         ~mutex_remove(){ boost::interprocess::named_mutex::remove("seed_finding"); }
+      } remover; */
+    boost::interprocess::named_mutex mutex_2(boost::interprocess::open_or_create, "seed_finding");
 
     // Get the prefix sum for the spacepoint grid using buffer.
     const device::prefix_sum_t sp_grid_prefix_sum = device::get_prefix_sum(
@@ -116,13 +135,35 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     const unsigned int nDoubletCountBlocks =
         sp_grid_prefix_sum.size() / nDoubletCountThreads + 1;
 
+    mutex_2.lock();
+    Sync::complete(mem);
+    mutex_2.unlock();
+    printf("Waiting count_doublets\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+    auto start_count_doublets =
+            std::chrono::system_clock::now();
     // Count the number of doublets that we need to produce.
     kernels::count_doublets<<<nDoubletCountBlocks, nDoubletCountThreads>>>(
         m_seedfinder_config, g2_view, sp_grid_prefix_sum_view,
         doublet_counter_buffer);
+
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
+     auto end_count_doublets =
+        std::chrono::system_clock::now();
+    std::chrono::duration<double> time_count_doublets =
+            end_count_doublets - start_count_doublets;
+    *logfile<<time_count_doublets.count()<<",";
+
+    mutex_2.lock();
+    Sync::reset_shared_mem(mem);
+    printf("count_doublets Done\n");
+    mutex_2.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n"); 
+    
     // Get the summary values per bin.
     vecmem::vector<device::doublet_counter_header> doublet_counts(
         m_mr.host ? m_mr.host : &(m_mr.main));
@@ -151,6 +192,15 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     const unsigned int nDoubletFindBlocks =
         doublet_prefix_sum.size() / nDoubletFindThreads + 1;
 
+    mutex_2.lock();
+    Sync::complete(mem);
+    mutex_2.unlock();
+    printf("Waiting find_doublets\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+
+    auto start_find_doublets =
+            std::chrono::system_clock::now();
     // Find all of the spacepoint doublets.
     kernels::find_doublets<<<nDoubletFindBlocks, nDoubletFindThreads>>>(
         m_seedfinder_config, g2_view, doublet_counter_buffer,
@@ -158,6 +208,18 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         doublet_buffers.middleTop);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_find_doublets =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_find_doublets =
+            end_find_doublets - start_find_doublets;
+    *logfile<<time_find_doublets.count()<<",";
+
+    mutex_2.lock();
+    Sync::reset_shared_mem(mem);
+    printf("find_doublets Done\n");
+    mutex_2.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n"); 
 
     // The number of bins.
     unsigned int nbins = g2_view._data_view.m_size;
@@ -183,7 +245,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     traccc::cuda::triplet_counting(
         m_seedfinder_config, mb_headers, g2_view, doublet_counter_buffer,
         doublet_buffers.middleBottom, doublet_buffers.middleTop, tcc_buffer,
-        m_mr.host ? *m_mr.host : m_mr.main);
+        m_mr.host ? *m_mr.host : m_mr.main, logfile, mem);
 
     // Take header of the triplet counter container buffer into host
     vecmem::vector<triplet_counter_per_bin> tcc_headers(
@@ -208,7 +270,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
         m_seedfinder_config, m_seedfilter_config, tcc_headers, g2_view,
         doublet_counter_buffer, doublet_buffers.middleBottom,
         doublet_buffers.middleTop, tcc_buffer, tc_buffer,
-        m_mr.host ? *m_mr.host : m_mr.main);
+        m_mr.host ? *m_mr.host : m_mr.main, logfile, mem);
 
     // Take header of the triplet container buffer into host
     vecmem::vector<triplet_per_bin> tc_headers(m_mr.host ? m_mr.host
@@ -218,7 +280,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     // Run weight updating
     traccc::cuda::weight_updating(m_seedfilter_config, tc_headers, g2_view,
                                   tcc_buffer, tc_buffer,
-                                  m_mr.host ? *m_mr.host : m_mr.main);
+                                  m_mr.host ? *m_mr.host : m_mr.main, logfile, mem);
 
     // Get the number of seeds (triplets)
     auto n_triplets = std::accumulate(n_triplets_per_bin.begin(),
@@ -231,7 +293,7 @@ vecmem::data::vector_buffer<seed> seed_finding::operator()(
     traccc::cuda::seed_selecting(
         m_seedfilter_config, doublet_counts, spacepoints_view, g2_view,
         doublet_counter_buffer, tcc_buffer, tc_buffer, seed_buffer,
-        m_mr.host ? *m_mr.host : m_mr.main);
+        m_mr.host ? *m_mr.host : m_mr.main, logfile, mem);
 
     return seed_buffer;
 }

@@ -8,6 +8,7 @@
 #include "traccc/cuda/seeding/weight_updating.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
 #include "traccc/cuda/utils/definitions.hpp"
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 namespace traccc {
 namespace cuda {
@@ -30,7 +31,14 @@ void weight_updating(const seedfilter_config& filter_config,
                      sp_grid_const_view internal_sp_view,
                      triplet_counter_container_view tcc_view,
                      triplet_container_view tc_view,
-                     vecmem::memory_resource& resource) {
+                     vecmem::memory_resource& resource, std::ofstream* logfile, unsigned char* mem) {
+
+    /* struct mutex_remove
+      {
+         mutex_remove() { boost::interprocess::named_mutex::remove("weight_updating"); }
+         ~mutex_remove(){ boost::interprocess::named_mutex::remove("weight_updating"); }
+      } remover;*/
+    boost::interprocess::named_mutex mutex_2(boost::interprocess::open_or_create, "weight_updating"); 
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -53,6 +61,15 @@ void weight_updating(const seedfilter_config& filter_config,
 
     // shared memory assignment for the radius of the compatible top spacepoints
     unsigned int sh_mem = sizeof(scalar) * filter_config.compatSeedLimit;
+    mutex_2.lock();
+    Sync::complete(mem);
+    mutex_2.unlock();
+    printf("Waiting set_zero_kernel\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+
+    auto start_weight_updating_kernel =
+            std::chrono::system_clock::now();
 
     // run the kernel
     weight_updating_kernel<<<num_blocks, num_threads, sh_mem>>>(
@@ -61,6 +78,20 @@ void weight_updating(const seedfilter_config& filter_config,
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_weight_updating_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_weight_updating_kernel =
+            end_weight_updating_kernel - start_weight_updating_kernel;
+    if(logfile)
+    *logfile<<time_weight_updating_kernel.count()<<",";
+
+    mutex_2.lock();
+    Sync::reset_shared_mem(mem);
+    printf("set_zero_kernel Done\n");
+    mutex_2.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n"); 
+
 }
 
 __global__ void weight_updating_kernel(

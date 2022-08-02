@@ -7,6 +7,7 @@
 
 #include "traccc/cuda/seeding/triplet_counting.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 namespace traccc {
 namespace cuda {
@@ -48,19 +49,50 @@ void triplet_counting(
     device::doublet_counter_container_types::const_view dcc_view,
     doublet_container_view mbc_view, doublet_container_view mtc_view,
     triplet_counter_container_view tcc_view,
-    vecmem::memory_resource& resource) {
+    vecmem::memory_resource& resource, std::ofstream* logfile, unsigned char* mem) {
+
+
+    /* struct mutex_remove
+      {
+         mutex_remove() { boost::interprocess::named_mutex::remove("triplet_counting"); }
+         ~mutex_remove(){ boost::interprocess::named_mutex::remove("triplet_counting"); }
+      } remover; */
+    boost::interprocess::named_mutex mutex_4(boost::interprocess::open_or_create, "triplet_counting");
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
     unsigned int num_threads = WARP_SIZE * 2;
     unsigned int num_blocks = nbins / num_threads + 1;
 
+    mutex_4.lock();
+    Sync::complete(mem);
+    printf("Waiting set_zero_kernel triplet counting\n");
+    mutex_4.unlock();
+    
+    
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+
+    auto start_set_zero_kernel =
+            std::chrono::system_clock::now();
+
     // zero initialization
     set_zero_kernel<<<num_blocks, num_threads>>>(tcc_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_set_zero_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_set_zero_kernel =
+            end_set_zero_kernel - start_set_zero_kernel;
+    *logfile<<time_set_zero_kernel.count()<<",";
 
+    mutex_4.lock();
+    Sync::reset_shared_mem(mem);
+    printf("set_zero_kernel triplet counting Done\n");
+    mutex_4.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n"); 
     // The thread-block is desinged to make each thread count triplets per
     // middle-bot doublet
 
@@ -78,6 +110,15 @@ void triplet_counting(
         num_blocks += mbc_headers[i].n_doublets / num_threads + 1;
     }
 
+    mutex_4.lock();
+    Sync::complete(mem);
+    mutex_4.unlock();
+    printf("Waiting triplet_counting_kernel\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+
+    auto start_triplet_counting_kernel =
+        std::chrono::system_clock::now();
     // run the kernel
     triplet_counting_kernel<<<num_blocks, num_threads>>>(
         config, internal_sp_view, dcc_view, mbc_view, mtc_view, tcc_view);
@@ -85,6 +126,18 @@ void triplet_counting(
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_triplet_counting_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_triplet_counting_kernel =
+            end_triplet_counting_kernel - start_triplet_counting_kernel;
+    *logfile<<time_triplet_counting_kernel.count()<<",";
+
+    mutex_4.lock();
+    Sync::reset_shared_mem(mem);
+    printf("triplet_counting_kernel Done\n");
+    mutex_4.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n"); 
 }
 
 __global__ void triplet_counting_kernel(

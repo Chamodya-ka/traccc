@@ -91,8 +91,8 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda(mr);
-    traccc::cuda::track_params_estimation tp_cuda(mr);
+    traccc::cuda::seeding_algorithm sa_cuda(mr,&logfile,mem);
+    traccc::cuda::track_params_estimation tp_cuda(mr,&logfile,mem);
     traccc::cuda::clusterization_algorithm ca_cuda(mr,&logfile,mem);
 
     // performance writer
@@ -454,11 +454,11 @@ int main(int argc, char* argv[]) {
     logfile<<"event,file io,find_clusters_kernel,count_cluster_cells,connect_components,create_measurements,form_spacepoints,overall clusterization,count_grid_capacities,populate_grid,count_doublets,find_doublets,set_zero_kernel,triplet_counting_kernel,set_zero_triplet_finding,triplet_finding,weight_updating,seed_selecting,overall_seeding,track_param_est_kernel,overall_track_param_est"<<std::endl;    
 
     // Set up shared memory
-    struct shm_remove
+    /* struct shm_remove
     {
         shm_remove() { boost::interprocess::shared_memory_object::remove("shared_memory"); }
         ~shm_remove(){ boost::interprocess::shared_memory_object::remove("shared_memory"); }
-    } remover;
+    } remover; */
     // create shared memory object
     boost::interprocess::shared_memory_object shm(boost::interprocess::open_or_create, "shared_memory", boost::interprocess::read_write);
     // resize shared memory

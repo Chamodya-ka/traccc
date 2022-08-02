@@ -7,7 +7,7 @@
 
 #include "traccc/cuda/seeding/triplet_finding.hpp"
 #include "traccc/cuda/utils/cuda_helper.cuh"
-
+#include <boost/interprocess/sync/named_mutex.hpp>
 namespace traccc {
 namespace cuda {
 
@@ -51,18 +51,47 @@ void triplet_finding(
     device::doublet_counter_container_types::const_view dcc_view,
     doublet_container_view mbc_view, doublet_container_view mtc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
-    vecmem::memory_resource& resource) {
+    vecmem::memory_resource& resource, std::ofstream* logfile, unsigned char* mem) {
+
+    /* struct mutex_remove
+      {
+         mutex_remove() { boost::interprocess::named_mutex::remove("triplet_finding"); }
+         ~mutex_remove(){ boost::interprocess::named_mutex::remove("triplet_finding"); }
+      } remover; */
+    boost::interprocess::named_mutex mutex_2(boost::interprocess::open_or_create, "triplet_finding");
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
     unsigned int num_threads = WARP_SIZE * 2;
     unsigned int num_blocks = nbins / num_threads + 1;
 
+    mutex_2.lock();
+    Sync::complete(mem);
+    mutex_2.unlock();
+    printf("Waiting set_zero_kernel triplet finding\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+    auto start_set_zero_kernel =
+            std::chrono::system_clock::now();
     // zero initialization
     set_zero_kernel<<<num_blocks, num_threads>>>(tc_view);
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_set_zero_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_set_zero_kernel =
+            end_set_zero_kernel - start_set_zero_kernel;
+    
+    if (logfile)
+    *logfile<<time_set_zero_kernel.count()<<",";
+
+    mutex_2.lock();
+    Sync::reset_shared_mem(mem);
+    printf("set_zero_kernel Done\n");
+    mutex_2.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n"); 
 
     // The thread-block is desinged to make each thread find triplets per
     // compatible middle-bot doublet
@@ -84,6 +113,14 @@ void triplet_finding(
     // shared memory assignment for the number of triplets per thread
     unsigned int sh_mem = sizeof(int) * num_threads;
 
+    mutex_2.lock();
+    Sync::complete(mem);
+    mutex_2.unlock();
+    printf("Waiting triplet_finding_kernel\n");
+    Sync::wait_for_other_processes(mem);
+    printf("Done\n");
+    auto start_triplet_finding_kernel =
+            std::chrono::system_clock::now();
     // run the kernel
     triplet_finding_kernel<<<num_blocks, num_threads, sh_mem>>>(
         config, filter_config, internal_sp_view, dcc_view, mbc_view, mtc_view,
@@ -92,6 +129,19 @@ void triplet_finding(
     // cuda error check
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    auto end_triplet_finding_kernel =
+            std::chrono::system_clock::now();
+    std::chrono::duration<double> time_triplet_finding_kernel =
+            end_triplet_finding_kernel - start_triplet_finding_kernel;
+    if (logfile)
+    *logfile<<time_triplet_finding_kernel.count()<<",";
+
+    mutex_2.lock();
+    Sync::reset_shared_mem(mem);
+    printf("set_zero_kernel Done\n");
+    mutex_2.unlock();
+    Sync::wait_for_reset(mem);
+    printf("reset complete\n"); 
 }
 
 __global__ void triplet_finding_kernel(

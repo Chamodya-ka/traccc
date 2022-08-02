@@ -59,6 +59,11 @@ seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr)
                            default_spacepoint_grid_config(), mr),
       m_seed_finding(default_seedfinder_config(), mr) {}
 
+seeding_algorithm::seeding_algorithm(const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem)
+    : m_spacepoint_binning(default_seedfinder_config(),
+                           default_spacepoint_grid_config(), mr, logfile, mem),
+      m_seed_finding(default_seedfinder_config(), mr, logfile, mem), logfile(logfile), mem(mem) {}
+
 vecmem::data::vector_buffer<seed> seeding_algorithm::operator()(
     const spacepoint_container_types::const_view& spacepoints_view) const {
 

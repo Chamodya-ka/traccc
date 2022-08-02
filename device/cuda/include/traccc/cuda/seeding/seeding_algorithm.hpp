@@ -22,6 +22,9 @@
 // traccc library include(s).
 #include "traccc/utils/memory_resource.hpp"
 
+#include <fstream>
+#include "traccc/cuda/utils/Sync.hpp"
+
 namespace traccc::cuda {
 
 /// Main algorithm for performing the track seeding on an NVIDIA GPU
@@ -36,7 +39,7 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     /// @param mr The memory resource to use
     ///
     seeding_algorithm(const traccc::memory_resource& mr);
-
+    seeding_algorithm(const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem);
     /// Operator executing the algorithm.
     ///
     /// @param spacepoints_view is a view of all spacepoints in the event
@@ -60,6 +63,8 @@ class seeding_algorithm : public algorithm<vecmem::data::vector_buffer<seed>(
     spacepoint_binning m_spacepoint_binning;
     /// Sub-algorithm performing the seed finding
     seed_finding m_seed_finding;
+    std::ofstream* logfile=NULL;
+    unsigned char* mem=NULL;
 
 };  // class seeding_algorithm
 

@@ -16,7 +16,8 @@
 #include "traccc/seeding/detail/spacepoint_grid.hpp"
 #include "traccc/seeding/detail/triplet.hpp"
 #include "traccc/seeding/seed_selecting_helper.hpp"
-
+#include <fstream>
+#include "traccc/cuda/utils/Sync.hpp"
 namespace traccc {
 namespace cuda {
 
@@ -38,7 +39,7 @@ void seed_selecting(
     device::doublet_counter_container_types::const_view dcc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
-    vecmem::memory_resource& resource);
+    vecmem::memory_resource& resource , std::ofstream* logfile, unsigned char* mem);
 
 }  // namespace cuda
 }  // namespace traccc

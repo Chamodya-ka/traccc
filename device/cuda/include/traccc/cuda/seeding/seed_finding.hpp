@@ -22,6 +22,9 @@
 // System include(s).
 #include <functional>
 
+#include <fstream>
+#include "traccc/cuda/utils/Sync.hpp"
+
 namespace traccc::cuda {
 
 /// Seed finding for cuda
@@ -40,6 +43,9 @@ class seed_finding
     /// @param mr vecmem memory resource
     seed_finding(const seedfinder_config& config,
                  const traccc::memory_resource& mr);
+
+    seed_finding(const seedfinder_config& config,
+                 const traccc::memory_resource& mr,  std::ofstream* logfile, unsigned char* mem);
 
     /// Callable operator for the seed finding
     ///
@@ -73,6 +79,8 @@ class seed_finding
     seedfilter_config m_seedfilter_config;
     traccc::memory_resource m_mr;
     std::unique_ptr<vecmem::copy> m_copy;
+    std::ofstream* logfile =NULL;
+    unsigned char* mem =NULL;
 };
 
 }  // namespace traccc::cuda

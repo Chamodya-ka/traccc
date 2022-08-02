@@ -21,6 +21,9 @@
 #include <functional>
 #include <utility>
 
+#include <fstream>
+#include "traccc/cuda/utils/Sync.hpp"
+
 namespace traccc::cuda {
 
 /// Spacepoing binning executed on a CUDA device
@@ -34,6 +37,10 @@ class spacepoint_binning : public algorithm<sp_grid_buffer(
     spacepoint_binning(const seedfinder_config& config,
                        const spacepoint_grid_config& grid_config,
                        const traccc::memory_resource& mr);
+
+    spacepoint_binning(
+        const seedfinder_config& config, const spacepoint_grid_config& grid_config,
+        const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem);
 
     /// Function executing the algorithm with a a view of spacepoints
     sp_grid_buffer operator()(const spacepoint_container_types::const_view&
@@ -54,6 +61,8 @@ class spacepoint_binning : public algorithm<sp_grid_buffer(
     std::pair<sp_grid::axis_p0_type, sp_grid::axis_p1_type> m_axes;
     traccc::memory_resource m_mr;
     std::unique_ptr<vecmem::copy> m_copy;
+    std::ofstream* logfile=NULL;
+    unsigned char* mem=NULL;
 
 };  // class spacepoint_binning
 
