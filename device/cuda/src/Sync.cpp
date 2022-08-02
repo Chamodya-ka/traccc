@@ -75,7 +75,7 @@ void wait_for_reset(unsigned char* mem){
     }
     //done_reset=true;
     //done_set=false;
-    sleep(0.5);
+    sleep(1);
 }
 
 void wait_for_other_processes(unsigned char* mem){
@@ -97,7 +97,7 @@ void wait_for_other_processes(unsigned char* mem){
     }
     //done_set=true;
     //done_reset=false;
-    sleep(0.5);
+    sleep(1);
     //printf("This should be printed at once? 5 times \n");
 }
 

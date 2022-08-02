@@ -106,7 +106,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
-
+        logfile << event <<",";
         /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
@@ -132,7 +132,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
             end_file_reading_cpu - start_file_reading_cpu;
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
-
+        logfile << time_file_reading_cpu.count() << ",";
         /*-----------------------------
               Clusterization and Spacepoint Creation (cuda)
           -----------------------------*/
@@ -145,7 +145,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_clusterization_cuda =
             end_cluterization_cuda - start_cluterization_cuda;
         /*time*/ clusterization_sp_cuda += time_clusterization_cuda.count();
-
+        logfile << time_clusterization_cuda.count() <<",";
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
 
@@ -196,7 +196,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
-
+        logfile << time_seeding_cuda.count() <<",";
         // CPU
 
         traccc::seeding_algorithm::output_type seeds;
@@ -227,7 +227,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
             end_tp_estimating_cuda - start_tp_estimating_cuda;
         /*time*/ tp_estimating_cuda += time_tp_estimating_cuda.count();
-
+        logfile << time_tp_estimating_cuda.count() <<std::endl;
         // CPU
 
         traccc::track_params_estimation::output_type params;
@@ -408,7 +408,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
               << tp_estimating_cpu << std::endl;
     std::cout << "tr_par_esti_time (cuda)   " << std::setw(10) << std::left
               << tp_estimating_cuda << std::endl;
-
+    logfile.close();
     return 0;
 }
 
