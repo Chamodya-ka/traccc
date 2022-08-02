@@ -1,0 +1,2 @@
+event,file io,find_clusters_kernel,count_cluster_cells,connect_components,create_measurements,form_spacepoints,overall clusterization,count_grid_capacities,populate_grid,count_doublets,find_doublets,set_zero_kernel,triplet_counting_kernel,set_zero_triplet_finding,triplet_finding,weight_updating,seed_selecting,overall_seeding,track_param_est_kernel,overall_track_param_est
+0,0.119537,0.559429,0.000217522,0.00998723,0.0235232,0.00028766,9.64111,0.00017565,0.000232093,0.00905132,0.0121206,5.4517e-05,0.0341826,7.8886e-05,0.016306,0.00116938,0.0116278,20.1173,0.000179481,2.00453
