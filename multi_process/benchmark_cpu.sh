@@ -24,6 +24,7 @@ Tstart=$(date "+%s.%3N")
 for((i=0;i<num_proc;i++))
 do
 	# get processor id	
+	: '
 	if [ $threads -eq 2 ];then
 		X=$(($i/$cores))
 		Y=$(($X % $threads))
@@ -39,8 +40,10 @@ do
 	if [ $threads -eq 1 ];then
 		p=$((($i % $cores)))
 	fi
+	'
+	p=$((($i % ($cores * $threads))))
 	# end get processor id
-	taskset -c $p ../build/bin/traccc_cpu_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
+	taskset -c $p ../build/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
 done
 wait
 Tend=$(date "+%s.%3N")
