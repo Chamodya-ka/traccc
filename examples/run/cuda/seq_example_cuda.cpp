@@ -21,7 +21,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // performance
-#include "traccc/efficiency/seeding_performance_writer.hpp"
+//#include "traccc/efficiency/seeding_performance_writer.hpp"
 
 // options
 #include "traccc/options/common_options.hpp"
@@ -32,7 +32,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/binary_page_memory_resource.hpp>
-
+#include <vecmem/memory/contiguous_memory_resource.hpp>
 // System include(s).
 #include <chrono>
 #include <exception>
@@ -75,21 +75,21 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::host_memory_resource host_mr;
     vecmem::cuda::managed_memory_resource mng_mr;
     vecmem::binary_page_memory_resource bpmr(mng_mr);
-
+    vecmem::contiguous_memory_resource c_mr(mng_mr,pow(2,28));
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda(mng_mr);
-    traccc::cuda::track_params_estimation tp_cuda(mng_mr);
-    traccc::cuda::clusterization_algorithm ca_cuda(mng_mr);
+    traccc::cuda::seeding_algorithm sa_cuda(c_mr);
+    traccc::cuda::track_params_estimation tp_cuda(c_mr);
+    traccc::cuda::clusterization_algorithm ca_cuda(c_mr);
 
     // performance writer
-    traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
-    sd_performance_writer.add_cache("CPU");
-    sd_performance_writer.add_cache("CUDA");
+    //traccc::seeding_performance_writer sd_performance_writer(
+    //    traccc::seeding_performance_writer::config{});
+    //sd_performance_writer.add_cache("CPU");
+    //sd_performance_writer.add_cache("CUDA");
 
     /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
@@ -103,7 +103,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, i_cfg.cell_directory,
                                           common_opts.input_data_format,
-                                          surface_transforms, digi_cfg, mng_mr);
+                                          surface_transforms, digi_cfg, c_mr);
 
         /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
@@ -261,7 +261,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             std::cout << " track parameters matching rate: " << matching_rate
                       << std::endl;
         }
-
+        c_mr.reuse();
         /*----------------
              Statistics
           ---------------*/
@@ -277,7 +277,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
              Writer
           ------------*/
 
-        if (i_cfg.check_seeding_performance) {
+        /* if (i_cfg.check_seeding_performance) {
             traccc::event_map evt_map(event, i_cfg.detector_file,
                                       i_cfg.digitization_config_file,
                                       i_cfg.cell_directory, i_cfg.hit_directory,
@@ -289,7 +289,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                 sd_performance_writer.write("CPU", seeds, spacepoints_per_event,
                                             evt_map);
             }
-        }
+        } */
     }
 
     /*time*/ auto end_wall_time = std::chrono::system_clock::now();
@@ -298,7 +298,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
 
     /*time*/ wall_time += time_wall_time.count();
 
-    sd_performance_writer.finalize();
+    //sd_performance_writer.finalize();
 
     std::cout << "==> Statistics ... " << std::endl;
     std::cout << "- read    " << n_spacepoints << " spacepoints from "
