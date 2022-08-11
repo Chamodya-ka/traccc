@@ -28,6 +28,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/memory/contiguous_memory_resource.hpp>
 
 // System include(s).
 #include <chrono>
@@ -73,9 +74,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::cuda::managed_memory_resource mng_mr;
     vecmem::cuda::host_memory_resource cu_host_mr;
     vecmem::cuda::device_memory_resource cu_dev_mr;
-
+    vecmem::contiguous_memory_resource c_mr(cu_host_mr,pow(2,28));
     // Struct with memory resources to pass to CUDA algorithms
-    traccc::memory_resource mr{cu_dev_mr, &cu_host_mr};
+    traccc::memory_resource mr{cu_dev_mr, &c_mr};
 
     traccc::clusterization_algorithm ca(host_mr);
     traccc::spacepoint_formation sf(host_mr);
@@ -361,6 +362,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             end_wall_time - start_wall_time;
 
         /*time*/ wall_time += time_wall_time.count();
+        c_mr.reuse();
     }
 
     if (i_cfg.check_performance) {
