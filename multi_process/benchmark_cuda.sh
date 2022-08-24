@@ -27,6 +27,23 @@ export TRACCC_TEST_DATA_DIR=$datapath
 Tstart=$(date "+%s.%3N")
 for((i=0;i<num_proc;i++))
 do
+: '
+	if [ $threads -eq 2 ];then
+		X=$(($i/$cores))
+		Y=$(($X % $threads))
+		
+		if [ $Y -eq 0 ];then
+			p=$((($i % $cores)*2))
+			
+		else
+			p=$((($i % $cores)*2+1))
+		fi
+	fi	
+
+	if [ $threads -eq 1 ];then
+		p=$((($i % $cores)))
+	fi
+'
 	p=$((($i % ($cores * $threads))))
 	echo " processor id $p";
 	# get gpu id
@@ -34,7 +51,7 @@ do
 	echo " gpu $gpu_id";
 	# end get gpu id
 	if [ -z $log_dir ];then
-	CUDA_VISIBLE_DEVICES=$gpu_id taskset -c $p ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
+	CUDA_VISIBLE_DEVICES=$gpu_id ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
 	fi
 done
 wait
