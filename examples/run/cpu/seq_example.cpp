@@ -48,6 +48,12 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
 
+    float file_reading_cpu(0);
+    float clusterization_cpu(0);
+    float sp_formation_cpu(0);
+    float seeding_cpu(0);
+    float tp_estimating_cpu(0);
+
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
 
@@ -68,36 +74,72 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
 
+
+        /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
         // Read the cells from the relevant event file
         traccc::cell_container_types::host cells_per_event =
             traccc::read_cells_from_event(event, common_opts.input_directory,
                                           common_opts.input_data_format,
                                           surface_transforms, digi_cfg,
                                           host_mr);
+        /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
+        /*time*/ std::chrono::duration<double> time_file_reading_cpu =
+            end_file_reading_cpu - start_file_reading_cpu;
+        /*time*/ file_reading_cpu += time_file_reading_cpu.count();
 
         /*-------------------
             Clusterization
           -------------------*/
+        /*time*/ auto start_clusterization_cpu =
+                std::chrono::system_clock::now();
 
         auto measurements_per_event = ca(cells_per_event);
+        /*time*/ auto end_clusterization_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_clusterization_cpu =
+                end_clusterization_cpu - start_clusterization_cpu;
+            /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
+
+        /*time*/ auto start_sp_formation_cpu =
+                std::chrono::system_clock::now();
+
+
         auto spacepoints_per_event = sf(measurements_per_event);
+
+        /*time*/ auto end_sp_formation_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
+                end_sp_formation_cpu - start_sp_formation_cpu;
+            /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
 
         /*-----------------------
           Seeding algorithm
           -----------------------*/
+        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
 
         auto seeds = sa(spacepoints_per_event);
+        /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_seeding_cpu =
+                end_seeding_cpu - start_seeding_cpu;
+            /*time*/ seeding_cpu += time_seeding_cpu.count();
 
         /*----------------------------
           Track params estimation
           ----------------------------*/
-
+        /*time*/ auto start_tp_estimating_cpu =
+                std::chrono::system_clock::now();
         auto params = tp(spacepoints_per_event, seeds);
+
+        /*time*/ auto end_tp_estimating_cpu =
+                std::chrono::system_clock::now();
+            /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
+                end_tp_estimating_cpu - start_tp_estimating_cpu;
+            /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
 
         /*----------------------------
           Statistics
@@ -137,6 +179,16 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
               << std::endl;
     std::cout << "- created " << n_seeds << " seeds" << std::endl;
 
+     std::cout << "file reading (cpu)        " << std::setw(10) << std::left
+              << file_reading_cpu << std::endl;
+    std::cout << "clusterization_time (cpu) " << std::setw(10) << std::left
+              << clusterization_cpu << std::endl;
+    std::cout << "spacepoint_formation_time (cpu) " << std::setw(10)
+              << std::left << sp_formation_cpu << std::endl;
+    std::cout << "seeding_time (cpu)        " << std::setw(10) << std::left
+              << seeding_cpu << std::endl;
+    std::cout << "tr_par_esti_time (cpu)    " << std::setw(10) << std::left
+              << tp_estimating_cpu << std::endl;
     return 0;
 }
 
