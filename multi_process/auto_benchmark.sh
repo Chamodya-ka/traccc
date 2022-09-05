@@ -29,10 +29,10 @@ if [ $log != 0 ];then
 	mkdir ./kernel_logs_$Tstart/
 fi
 echo "$max_proc $max_events";
-for((i=10;i<=max_events;i+=increment))
+for((i=max_events;i<=max_events;i+=increment))
 do	
 	echo "starting to benchmark with $i processes";
-	for((j=1;j<=max_proc;j++))
+	for((j=1;j<=max_proc;j+=1))
 	do
 		echo "starting new run with $j events";
 		if [ $log != 0 ];then

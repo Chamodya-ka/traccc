@@ -74,7 +74,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     vecmem::cuda::managed_memory_resource mng_mr;
     vecmem::cuda::host_memory_resource cu_host_mr;
     vecmem::cuda::device_memory_resource cu_dev_mr;
-    vecmem::contiguous_memory_resource c_mr(cu_host_mr,pow(2,28));
+    vecmem::contiguous_memory_resource c_mr(mng_mr,pow(2,28));
     // Struct with memory resources to pass to CUDA algorithms
     traccc::memory_resource mr{cu_dev_mr, &c_mr};
 
