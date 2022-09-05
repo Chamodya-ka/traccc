@@ -13,10 +13,10 @@
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
-#include <vecmem/utils/copy.hpp>
 #include <fstream>
-#include "traccc/cuda/utils/Sync.hpp"
+#include <vecmem/utils/copy.hpp>
 
+#include "traccc/cuda/utils/Sync.hpp"
 
 namespace traccc {
 namespace cuda {
@@ -35,8 +35,9 @@ struct track_params_estimation
     ///
     /// @param mr is the memory resource
     track_params_estimation(const traccc::memory_resource& mr);
- 
-    track_params_estimation(const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem);
+
+    track_params_estimation(const traccc::memory_resource& mr,
+                            std::ofstream* logfile, unsigned char* mem);
     /// Callable operator for track_params_esitmation
     ///
     /// @param spaepoints_view   is the view of the spacepoint container
@@ -66,7 +67,7 @@ struct track_params_estimation
 
     traccc::memory_resource m_mr;
     std::unique_ptr<vecmem::copy> m_copy;
-    std::ofstream* logfile =NULL;
+    std::ofstream* logfile = NULL;
     unsigned char* mem = NULL;
 };
 

@@ -22,6 +22,7 @@
 //// Traccc library include(s).
 //#include "traccc/utils/memory_resource.hpp"
 #include <fstream>
+
 #include "traccc/cuda/utils/Sync.hpp"
 namespace traccc::cuda {
 
@@ -33,7 +34,8 @@ class clusterization_algorithm
     /// Constructor for clusterization algorithm
     ///
     /// @param mr is a memory resource (device)
-    clusterization_algorithm(const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem);
+    clusterization_algorithm(const traccc::memory_resource& mr,
+                             std::ofstream* logfile, unsigned char* mem);
 
     /// Callable operator for clusterization algorithm
     ///

@@ -17,7 +17,6 @@
 
 // System include(s).
 #include <algorithm>
-
 #include <boost/interprocess/sync/named_mutex.hpp>
 
 namespace traccc {
@@ -49,14 +48,18 @@ void seed_selecting(
     device::doublet_counter_container_types::const_view dcc_view,
     triplet_counter_container_view tcc_view, triplet_container_view tc_view,
     vecmem::data::vector_buffer<seed>& seed_buffer,
-    vecmem::memory_resource& resource, std::ofstream* logfile, unsigned char* mem) {
-    
+    vecmem::memory_resource& resource, std::ofstream* logfile,
+    unsigned char* mem) {
+
     /* struct mutex_remove
       {
-         mutex_remove() { boost::interprocess::named_mutex::remove("seed_selecting"); }
-         ~mutex_remove(){ boost::interprocess::named_mutex::remove("seed_selecting"); }
-      } remover; */
-    boost::interprocess::named_mutex mutex_2(boost::interprocess::open_or_create, "seed_selecting");
+         mutex_remove() {
+      boost::interprocess::named_mutex::remove("seed_selecting"); }
+         ~mutex_remove(){
+      boost::interprocess::named_mutex::remove("seed_selecting"); } } remover;
+    */
+    boost::interprocess::named_mutex mutex_2(
+        boost::interprocess::open_or_create, "seed_selecting");
 
     unsigned int nbins = internal_sp_view._data_view.m_size;
 
@@ -88,8 +91,7 @@ void seed_selecting(
     printf("Waiting seed_selecting_kernel\n");
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
-    auto start_seed_selecting_kernel =
-            std::chrono::system_clock::now();
+    auto start_seed_selecting_kernel = std::chrono::system_clock::now();
     // run the kernel
     seed_selecting_kernel<<<num_blocks, num_threads, sh_mem>>>(
         filter_config, spacepoints_view, internal_sp_view, dcc_view, tcc_view,
@@ -98,12 +100,11 @@ void seed_selecting(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    auto end_seed_selecting_kernel =
-        std::chrono::system_clock::now();
+    auto end_seed_selecting_kernel = std::chrono::system_clock::now();
     std::chrono::duration<double> time_seed_selecting_kernel =
         end_seed_selecting_kernel - start_seed_selecting_kernel;
     if (logfile)
-    *logfile<<time_seed_selecting_kernel.count()<<",";
+        *logfile << time_seed_selecting_kernel.count() << ",";
     mutex_2.lock();
     Sync::reset_shared_mem(mem);
     printf("set_zero_kernel Done\n");

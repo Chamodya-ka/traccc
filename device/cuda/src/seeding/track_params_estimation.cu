@@ -10,8 +10,8 @@
 #include "traccc/cuda/utils/definitions.hpp"
 
 // VecMem include(s).
-#include <vecmem/utils/cuda/copy.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 namespace traccc {
 namespace cuda {
@@ -29,7 +29,7 @@ __global__ void track_params_estimating_kernel(
 
 track_params_estimation::track_params_estimation(
     const traccc::memory_resource& mr)
-    : m_mr(mr),logfile(NULL),mem(NULL) {
+    : m_mr(mr), logfile(NULL), mem(NULL) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
@@ -40,8 +40,9 @@ track_params_estimation::track_params_estimation(
 }
 
 track_params_estimation::track_params_estimation(
-    const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem)
-    : m_mr(mr),logfile(logfile),mem(mem) {
+    const traccc::memory_resource& mr, std::ofstream* logfile,
+    unsigned char* mem)
+    : m_mr(mr), logfile(logfile), mem(mem) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
@@ -75,13 +76,14 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const vecmem::data::vector_view<const seed>& seeds_view,
     std::size_t seeds_size) const {
-    
+
     /* struct mutex_remove
     {
-        mutex_remove() { boost::interprocess::named_mutex::remove("tracK_param"); }
-        ~mutex_remove(){ boost::interprocess::named_mutex::remove("tracK_param"); }
-    } remover; */
-    boost::interprocess::named_mutex mutex_3(boost::interprocess::open_or_create, "tracK_param");
+        mutex_remove() {
+    boost::interprocess::named_mutex::remove("tracK_param"); } ~mutex_remove(){
+    boost::interprocess::named_mutex::remove("tracK_param"); } } remover; */
+    boost::interprocess::named_mutex mutex_3(
+        boost::interprocess::open_or_create, "tracK_param");
 
     // Create output host container
     host_bound_track_parameters_collection params(
@@ -111,8 +113,7 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     printf("Waiting track_params_estimating_kernel\n");
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
-    auto start_track_param_est =
-            std::chrono::system_clock::now();
+    auto start_track_param_est = std::chrono::system_clock::now();
     // run the kernel
     track_params_estimating_kernel<<<num_blocks, num_threads>>>(
         spacepoints_view, seeds_view, params_buffer);
@@ -120,11 +121,10 @@ host_bound_track_parameters_collection track_params_estimation::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    auto end_track_param_est =
-            std::chrono::system_clock::now();
+    auto end_track_param_est = std::chrono::system_clock::now();
     std::chrono::duration<double> time_end_track_param_est =
-            end_track_param_est - start_track_param_est;
-    *logfile<<time_end_track_param_est.count()<<",";
+        end_track_param_est - start_track_param_est;
+    *logfile << time_end_track_param_est.count() << ",";
     mutex_3.lock();
     Sync::reset_shared_mem(mem);
     printf("track_params_estimating_kernel Done\n");

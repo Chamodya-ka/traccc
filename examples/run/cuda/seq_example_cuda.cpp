@@ -32,14 +32,14 @@
 // System include(s).
 #include <chrono>
 #include <exception>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
-#include <string> 
+#include <string>
 
 // boost inclues
-#include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
 //#include <boost/exception/diagnostic_information.hpp>
 
 #include "traccc/cuda/utils/Sync.hpp"
@@ -47,7 +47,8 @@
 namespace po = boost::program_options;
 
 int seq_run(const traccc::full_tracking_input_config& i_cfg,
-            const traccc::common_options& common_opts, bool run_cpu, std::ofstream& logfile, unsigned char* mem) {
+            const traccc::common_options& common_opts, bool run_cpu,
+            std::ofstream& logfile, unsigned char* mem) {
 
     // Read the surface transforms
     auto surface_transforms = traccc::read_geometry(i_cfg.detector_file);
@@ -91,9 +92,9 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     traccc::seeding_algorithm sa(host_mr);
     traccc::track_params_estimation tp(host_mr);
 
-    traccc::cuda::seeding_algorithm sa_cuda(mr,&logfile,mem);
-    traccc::cuda::track_params_estimation tp_cuda(mr,&logfile,mem);
-    traccc::cuda::clusterization_algorithm ca_cuda(mr,&logfile,mem);
+    traccc::cuda::seeding_algorithm sa_cuda(mr, &logfile, mem);
+    traccc::cuda::track_params_estimation tp_cuda(mr, &logfile, mem);
+    traccc::cuda::clusterization_algorithm ca_cuda(mr, &logfile, mem);
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -106,7 +107,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Loop over events
     for (unsigned int event = common_opts.skip;
          event < common_opts.events + common_opts.skip; ++event) {
-        logfile << event <<",";
+        logfile << event << ",";
         /*time*/ auto start_wall_time = std::chrono::system_clock::now();
 
         /*time*/ auto start_file_reading_cpu = std::chrono::system_clock::now();
@@ -145,7 +146,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_clusterization_cuda =
             end_cluterization_cuda - start_cluterization_cuda;
         /*time*/ clusterization_sp_cuda += time_clusterization_cuda.count();
-        logfile << time_clusterization_cuda.count() <<",";
+        logfile << time_clusterization_cuda.count() << ",";
         traccc::clusterization_algorithm::output_type measurements_per_event;
         traccc::spacepoint_formation::output_type spacepoints_per_event;
 
@@ -196,7 +197,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_seeding_cuda =
             end_seeding_cuda - start_seeding_cuda;
         /*time*/ seeding_cuda += time_seeding_cuda.count();
-        logfile << time_seeding_cuda.count() <<",";
+        logfile << time_seeding_cuda.count() << ",";
         // CPU
 
         traccc::seeding_algorithm::output_type seeds;
@@ -227,7 +228,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
         /*time*/ std::chrono::duration<double> time_tp_estimating_cuda =
             end_tp_estimating_cuda - start_tp_estimating_cuda;
         /*time*/ tp_estimating_cuda += time_tp_estimating_cuda.count();
-        logfile << time_tp_estimating_cuda.count() <<std::endl;
+        logfile << time_tp_estimating_cuda.count() << std::endl;
         // CPU
 
         traccc::track_params_estimation::output_type params;
@@ -431,7 +432,6 @@ int main(int argc, char* argv[]) {
     desc.add_options()("log_time", po::value<std::string>()->default_value("0"),
                        "log tstart time [unique]");
 
-
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -447,33 +447,47 @@ int main(int argc, char* argv[]) {
     std::string log_time = vm["log_time"].as<std::string>();
 
     // Setup log file
-    // Does not create directory. Make sure directory is properly created by bash script
-    std::string log_file_path = log_time+"/"+std::to_string(u_id);
+    // Does not create directory. Make sure directory is properly created by
+    // bash script
+    std::string log_file_path = log_time + "/" + std::to_string(u_id);
     std::ofstream logfile;
-    logfile.open(log_file_path+".csv", std::ios_base::app); // append instead of overwrite
-    logfile<<"event,file io,find_clusters_kernel,count_cluster_cells,connect_components,create_measurements,form_spacepoints,overall clusterization,count_grid_capacities,populate_grid,count_doublets,find_doublets,set_zero_kernel,triplet_counting_kernel,set_zero_triplet_finding,triplet_finding,weight_updating,seed_selecting,overall_seeding,track_param_est_kernel,overall_track_param_est"<<std::endl;    
+    logfile.open(log_file_path + ".csv",
+                 std::ios_base::app);  // append instead of overwrite
+    logfile
+        << "event,file "
+           "io,find_clusters_kernel,count_cluster_cells,connect_components,"
+           "create_measurements,form_spacepoints,overall "
+           "clusterization,count_grid_capacities,populate_grid,count_doublets,"
+           "find_doublets,set_zero_kernel,triplet_counting_kernel,set_zero_"
+           "triplet_finding,triplet_finding,weight_updating,seed_selecting,"
+           "overall_seeding,track_param_est_kernel,overall_track_param_est"
+        << std::endl;
 
     // Set up shared memory
     /* struct shm_remove
     {
-        shm_remove() { boost::interprocess::shared_memory_object::remove("shared_memory"); }
-        ~shm_remove(){ boost::interprocess::shared_memory_object::remove("shared_memory"); }
-    } remover; */
+        shm_remove() {
+    boost::interprocess::shared_memory_object::remove("shared_memory"); }
+        ~shm_remove(){
+    boost::interprocess::shared_memory_object::remove("shared_memory"); } }
+    remover; */
     // create shared memory object
-    boost::interprocess::shared_memory_object shm(boost::interprocess::open_or_create, "shared_memory", boost::interprocess::read_write);
+    boost::interprocess::shared_memory_object shm(
+        boost::interprocess::open_or_create, "shared_memory",
+        boost::interprocess::read_write);
     // resize shared memory
     shm.truncate(n_proc);
     // map the whole shared memory in this process
-    boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
+    boost::interprocess::mapped_region region(shm,
+                                              boost::interprocess::read_write);
     // get a pointer to this memory region
-    unsigned char *mem = static_cast<unsigned char*>(region.get_address());
+    unsigned char* mem = static_cast<unsigned char*>(region.get_address());
     Sync::init_shared_mem(n_proc, u_id, region.get_size(), mem);
-    printf("%d ID %d \n",u_id, Sync::u_id);
+    printf("%d ID %d \n", u_id, Sync::u_id);
     std::cout << "Running " << argv[0] << " "
               << full_tracking_input_cfg.detector_file << " "
               << common_opts.input_directory << " " << common_opts.events
               << std::endl;
 
     return seq_run(full_tracking_input_cfg, common_opts, run_cpu, logfile, mem);
-    
 }

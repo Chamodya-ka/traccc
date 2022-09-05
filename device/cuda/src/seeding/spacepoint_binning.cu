@@ -15,9 +15,9 @@
 #include "traccc/seeding/device/populate_grid.hpp"
 
 // VecMem include(s).
+#include <boost/interprocess/sync/named_mutex.hpp>
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
-#include <boost/interprocess/sync/named_mutex.hpp>
 
 namespace traccc::cuda {
 namespace kernels {
@@ -65,10 +65,13 @@ spacepoint_binning::spacepoint_binning(
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    const traccc::memory_resource& mr, std::ofstream* logfile, unsigned char* mem)
+    const traccc::memory_resource& mr, std::ofstream* logfile,
+    unsigned char* mem)
     : m_config(config),
       m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
-      m_mr(mr), logfile(logfile), mem(mem) {
+      m_mr(mr),
+      logfile(logfile),
+      mem(mem) {
 
     // Initialize m_copy ptr based on memory resources that were given
     if (mr.host) {
@@ -99,13 +102,14 @@ sp_grid_buffer spacepoint_binning::operator()(
 sp_grid_buffer spacepoint_binning::operator()(
     const spacepoint_container_types::const_view& spacepoints_view,
     const std::vector<unsigned int>& sp_sizes) const {
-    
+
     /* struct mutex_remove
       {
-         mutex_remove() { boost::interprocess::named_mutex::remove("sp_binning"); }
-         ~mutex_remove(){ boost::interprocess::named_mutex::remove("sp_binning"); }
-      } remover; */
-    boost::interprocess::named_mutex mutex_1(boost::interprocess::open_or_create, "sp_binning");
+         mutex_remove() {
+      boost::interprocess::named_mutex::remove("sp_binning"); } ~mutex_remove(){
+      boost::interprocess::named_mutex::remove("sp_binning"); } } remover; */
+    boost::interprocess::named_mutex mutex_1(
+        boost::interprocess::open_or_create, "sp_binning");
 
     // Get the prefix sum for the spacepoints using buffer.
     const device::prefix_sum_t sp_prefix_sum = device::get_prefix_sum(
@@ -140,8 +144,7 @@ sp_grid_buffer spacepoint_binning::operator()(
     printf("Waiting count_grid_capacities\n");
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
-    auto start_count_grid_capacities =
-            std::chrono::system_clock::now();
+    auto start_count_grid_capacities = std::chrono::system_clock::now();
     // Fill the grid capacity container.
     kernels::count_grid_capacities<<<num_blocks, num_threads>>>(
         m_config, m_axes.first, m_axes.second, spacepoints_view,
@@ -149,18 +152,17 @@ sp_grid_buffer spacepoint_binning::operator()(
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    auto end_count_grid_capacities =
-            std::chrono::system_clock::now();
+    auto end_count_grid_capacities = std::chrono::system_clock::now();
     std::chrono::duration<double> time_count_grid_capacities =
-            end_count_grid_capacities - start_count_grid_capacities;
-    *logfile<<time_count_grid_capacities.count()<<",";
+        end_count_grid_capacities - start_count_grid_capacities;
+    *logfile << time_count_grid_capacities.count() << ",";
 
     mutex_1.lock();
     Sync::reset_shared_mem(mem);
     printf("count_grid_capacities Done\n");
     mutex_1.unlock();
     Sync::wait_for_reset(mem);
-    printf("reset complete\n");   
+    printf("reset complete\n");
 
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
@@ -179,29 +181,27 @@ sp_grid_buffer spacepoint_binning::operator()(
     mutex_1.lock();
     Sync::complete(mem);
     printf("Waiting populate_grid\n");
-    mutex_1.unlock();   
+    mutex_1.unlock();
     Sync::wait_for_other_processes(mem);
     printf("Done\n");
-    auto start_populate_grid =
-            std::chrono::system_clock::now();
+    auto start_populate_grid = std::chrono::system_clock::now();
     // Populate the grid.
     kernels::populate_grid<<<num_blocks, num_threads>>>(
         m_config, spacepoints_view, sp_prefix_sum_view, grid_view);
     CUDA_ERROR_CHECK(cudaGetLastError());
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
-    auto end_populate_grid =
-            std::chrono::system_clock::now();
+    auto end_populate_grid = std::chrono::system_clock::now();
     std::chrono::duration<double> time_populate_grid =
-            end_populate_grid - start_populate_grid;
-    *logfile<<time_populate_grid.count()<<",";
+        end_populate_grid - start_populate_grid;
+    *logfile << time_populate_grid.count() << ",";
 
     mutex_1.lock();
     Sync::reset_shared_mem(mem);
     printf("populate_grid Done\n");
     mutex_1.unlock();
     Sync::wait_for_reset(mem);
-    printf("reset complete\n");   
+    printf("reset complete\n");
 
     // Return the freshly filled buffer.
     return grid_buffer;
