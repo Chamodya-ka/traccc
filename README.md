@@ -4,16 +4,16 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category           | Algorithms             | CPU | CUDA | SYCL |
-| ------------------ | ---------------------- | --- | ---- | ---- |
-| **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   |
-|                    | Measurement creation   | ✅  | 🟡   | 🟡   |
-|                    | Spacepoint formation   | ✅  | 🟡   | 🟡   |
-| **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   |
-|                    | Seed finding           | ✅  | ✅   | ✅   |
-|                    | Track param estimation | ✅  | ✅   | ✅   |
-|                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   |
-| **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   |
+| Category           | Algorithms             | CPU | CUDA | SYCL | Futhark |
+| ------------------ | ---------------------- | --- | ---- | ---- | ------- |
+| **Clusterization** | CCL                    | ✅  | 🟡   | 🟡   | ⚪      |
+|                    | Measurement creation   | ✅  | 🟡   | 🟡   | ⚪      |
+|                    | Spacepoint formation   | ✅  | 🟡   | 🟡   | ⚪      |
+| **Track finding**  | Spacepoint binning     | ✅  | ✅   | ✅   | ⚪      |
+|                    | Seed finding           | ✅  | ✅   | ✅   | ⚪      |
+|                    | Track param estimation | ✅  | ✅   | ✅   | ⚪      |
+|                    | Combinatorial KF       | ⚪  | ⚪   | ⚪   | ⚪      |
+| **Track fitting**  | KF                     | 🟡  | 🟡   | ⚪   | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
@@ -219,7 +219,7 @@ cmake --build <build_directory> <options>
 - Users can generate cuda examples by adding `-DTRACCC_BUILD_CUDA=ON` to cmake options
 
 ```sh
-<build_directory>/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_pixels/ --events=10 --run_cpu=1
+<build_directory>/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_pixels/ --events=10 --run_cpu=1
 ```
 
 ## Troubleshooting
