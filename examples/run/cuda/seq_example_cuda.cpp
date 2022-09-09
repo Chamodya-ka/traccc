@@ -362,7 +362,6 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             end_wall_time - start_wall_time;
 
         /*time*/ wall_time += time_wall_time.count();
-        c_mr.reuse();
     }
 
     if (i_cfg.check_performance) {
