@@ -24,27 +24,9 @@ Tstart=$(date "+%s.%3N")
 for((i=0;i<num_proc;i++))
 do
 	# get processor id
-	: '
-	if [ $threads -eq 2 ];then
-		X=$(($i/$cores))
-		Y=$(($X % $threads))
-		
-		if [ $Y -eq 0 ];then
-			p=$((($i % $cores)*2))
-			
-		else
-			p=$((($i % $cores)*2+1))
-		fi
-	fi	
-	
-	if [ $threads -eq 1 ];then
-		p=$((($i % ($cores * $threads))))
-	fi
-	'
 	p=$((($i % ($cores * $threads))))
 	echo " processor id $p";
 	# end get processor id
-	#../build/bin/traccc_cpu_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --cell_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
 	../build/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
 done
 wait
