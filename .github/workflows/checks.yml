@@ -19,3 +19,6 @@ jobs:
         with:
           name: changed
           path: changed
+      - name: Run Script
+        run: scripts_test/test_script.sh
+        
