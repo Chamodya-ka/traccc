@@ -40,7 +40,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
     // Read the digitization configuration file
     auto digi_cfg =
         traccc::read_digitization_config(i_cfg.digitization_config_file);
-    
+
     float file_reading_cpu(0);
     float clusterization_cpu(0);
     float sp_formation_cpu(0);
@@ -83,7 +83,7 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
                                           surface_transforms, digi_cfg,
                                           host_mr);
 
-	/*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
+        /*time*/ auto end_file_reading_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_file_reading_cpu =
             end_file_reading_cpu - start_file_reading_cpu;
         /*time*/ file_reading_cpu += time_file_reading_cpu.count();
@@ -91,53 +91,47 @@ int seq_run(const traccc::full_tracking_input_config& i_cfg,
             Clusterization
           -------------------*/
 
-
-	auto start_clusterization_cpu =
-                std::chrono::system_clock::now();
+        auto start_clusterization_cpu = std::chrono::system_clock::now();
         auto measurements_per_event = ca(cells_per_event);
 
-	/*time*/ auto end_clusterization_cpu =
-                std::chrono::system_clock::now();
+        /*time*/ auto end_clusterization_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_clusterization_cpu =
-                end_clusterization_cpu - start_clusterization_cpu;
+            end_clusterization_cpu - start_clusterization_cpu;
         /*time*/ clusterization_cpu += time_clusterization_cpu.count();
 
         /*------------------------
             Spacepoint formation
           ------------------------*/
 
-	/*time*/ auto start_sp_formation_cpu =
-                std::chrono::system_clock::now();
+        /*time*/ auto start_sp_formation_cpu = std::chrono::system_clock::now();
 
         auto spacepoints_per_event = sf(measurements_per_event);
 
-        /*time*/ auto end_sp_formation_cpu =
-                std::chrono::system_clock::now();
+        /*time*/ auto end_sp_formation_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_sp_formation_cpu =
-                end_sp_formation_cpu - start_sp_formation_cpu;
+            end_sp_formation_cpu - start_sp_formation_cpu;
         /*time*/ sp_formation_cpu += time_sp_formation_cpu.count();
 
         /*-----------------------
           Seeding algorithm
           -----------------------*/
 
-	/*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
+        /*time*/ auto start_seeding_cpu = std::chrono::system_clock::now();
         auto seeds = sa(spacepoints_per_event);
         /*time*/ auto end_seeding_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_seeding_cpu =
-                end_seeding_cpu - start_seeding_cpu;
+            end_seeding_cpu - start_seeding_cpu;
         /*time*/ seeding_cpu += time_seeding_cpu.count();
 
         /*----------------------------
           Track params estimation
           ----------------------------*/
-	/*time*/ auto start_tp_estimating_cpu =
-                std::chrono::system_clock::now();
+        /*time*/ auto start_tp_estimating_cpu =
+            std::chrono::system_clock::now();
         auto params = tp(spacepoints_per_event, seeds);
-        /*time*/ auto end_tp_estimating_cpu =
-                std::chrono::system_clock::now();
+        /*time*/ auto end_tp_estimating_cpu = std::chrono::system_clock::now();
         /*time*/ std::chrono::duration<double> time_tp_estimating_cpu =
-                end_tp_estimating_cpu - start_tp_estimating_cpu;
+            end_tp_estimating_cpu - start_tp_estimating_cpu;
         /*time*/ tp_estimating_cpu += time_tp_estimating_cpu.count();
 
         /*----------------------------
