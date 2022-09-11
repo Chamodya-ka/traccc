@@ -21,4 +21,6 @@ jobs:
           path: changed
       - name: Run Script
         run: scripts_test/test_script.sh
+      - name: Run Python
+        run: scripts_test/test_py.py
         
