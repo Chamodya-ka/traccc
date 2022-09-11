@@ -54,3 +54,8 @@ jobs:
           cd build
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
           ctest --output-on-failure
+			- name: Test multiprocess cuda script
+					cd ../multi_process
+					./auto_benchmark.sh -c6 -t2 -p1 -e1 -g1 -d"/media/chamodya/Backup Plus1/WorkSpace/TRACCC/data" -r0
+			- name: Test multiprocess cpu script
+					./auto_benchmark.sh -c6 -t2 -p1 -e1 -g1 -d"/media/chamodya/Backup Plus1/WorkSpace/TRACCC/data" -r1
