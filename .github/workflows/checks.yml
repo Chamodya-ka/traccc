@@ -22,5 +22,5 @@ jobs:
       - name: Run Script
         run: scripts_test/test_script.sh
       - name: Run Python
-        run: scripts_test/test_py.py
+        run: python3 scripts_test/test_py.py
         
