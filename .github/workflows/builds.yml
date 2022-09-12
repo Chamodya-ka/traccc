@@ -57,8 +57,8 @@ jobs:
       - name: Cuda Mps
         run: |
           cd multi_process
-          ./auto_benchmark -p1 -t1 -c1 -e1 -g1 -r0 -d"../data/"
+          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"../data/"
       - name: Cpu Multi-process
         run:
-          ./auto_benchmark -p1 -t1 -c1 -e1 -g1 -r1 -d"../data/"
+          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r1 -d"../data/"
       
