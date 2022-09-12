@@ -36,10 +36,11 @@ do
 
 	# start job
 	CUDA_VISIBLE_DEVICES=$gpu_id ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
-
+	result=$?
 done
 wait
 Tend=$(date "+%s.%3N")
 elapsed=$(echo "scale=3; $Tend - $Tstart" | bc)
 python3 log_data.py $num_proc $events $elapsed $cores $threads cuda
 echo "Elapsed: $elapsed s"
+exit $result
