@@ -35,7 +35,9 @@ jobs:
         shell: bash
     steps:
       - name: Dependencies
-        run: apt-get install -y git-lfs
+        run: |
+          apt-get install -y git-lfs
+          apt-get install bc
       - uses: actions/checkout@v2
         with:
           submodules: true
