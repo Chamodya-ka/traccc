@@ -33,11 +33,14 @@ do
 		echo "starting new run with $j events";
 		if [ $run_cpu != 0 ];then
 				
-			./benchmark_cpu.sh -p"$path" -n$j -e$i -c$cores -t$threads			
+			./benchmark_cpu.sh -p"$path" -n$j -e$i -c$cores -t$threads	
+			result=$?
 		else
-			./benchmark_cuda.sh -p"$path" -n$j -e$i -c$cores -t$threads -g$gpu				
+			./benchmark_cuda.sh -p"$path" -n$j -e$i -c$cores -t$threads -g$gpu
+			result=$?
 		fi
 				
 		sleep 1
 	done		
 done
+exit $result
