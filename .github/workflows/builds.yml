@@ -62,7 +62,7 @@ jobs:
           cd multi_process
           ./benchmark_cuda.sh -n1 -e1 -c1 -t1 -p"../data/" -g1
       - name: benchmark cpu multi process script
-        if: "matrix.platform.name != 'CUDA'"
+        if: "matrix.platform.name == 'CPU'"
         run: |
           cd multi_process
           ./benchmark_cpu.sh -n1 -e1 -c1 -t1 -p"../data/"
@@ -72,6 +72,7 @@ jobs:
           cd multi_process
           ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"../data/"
       - name: Auto Benchmark cpu
+        if: "matrix.platform.name == 'CPU'"
         run: |
           cd multi_process
           ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r1 -d"../data/"
