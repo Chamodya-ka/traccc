@@ -11,7 +11,7 @@ on:
 jobs:
   builds:
     name: ${{ matrix.platform.name }}-${{ matrix.build }}
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: self-hosted
 
     steps:
       - name: Dependencies
