@@ -10,7 +10,7 @@ on:
 
 jobs:
   builds:
-    name: ${{ matrix.platform.name }}-${{ matrix.build }}
+    # name: ${{ matrix.platform.name }}-${{ matrix.build }}
     runs-on: self-hosted
 
     steps:
@@ -22,7 +22,6 @@ jobs:
         run:
           cmake --build build
       - name: Auto Benchmark cuda
-        if: "matrix.platform.name == 'CUDA'"
         run: |
           cd multi_process
           #for testing purpose
