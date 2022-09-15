@@ -26,6 +26,9 @@ echo "number of events : $events";
 export TRACCC_TEST_DATA_DIR=$datapath
 
 # enable cuda mps
+# make sure mps is disabled
+echo quit|nvidia-cuda-mps-control
+
 nvidia-cuda-mps-control -d
 mps_ret=$?
 if [ $mps_ret -ne 0 ]; then
