@@ -27,7 +27,7 @@ export TRACCC_TEST_DATA_DIR=$datapath
 
 # enable cuda mps
 nvidia-cuda-mps-control -d
-mps_ret = $?
+mps_ret=$?
 if [ $mps_ret -ne 0 ]; then
     exit $mps_ret
 fi
@@ -37,7 +37,7 @@ echo "Enabled CUDA mps"
 # warmup / test run
 CUDA_VISIBLE_DEVICES=0 ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/ --events=$events --input-binary &
 wait $!
-result = $?
+result=$?
 echo "result : $result" 
 # end warm up/ test run
 
