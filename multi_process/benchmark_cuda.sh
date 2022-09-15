@@ -59,4 +59,5 @@ Tend=$(date "+%s.%3N")
 elapsed=$(echo "scale=3; $Tend - $Tstart" | bc)
 python3 log_data.py $num_proc $events $elapsed $cores $threads cuda
 echo "Elapsed: $elapsed s"
+echo quit|nvidia-cuda-mps-control
 exit $result
