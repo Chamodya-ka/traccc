@@ -24,6 +24,13 @@ echo "number of processes : $num_proc";
 echo "number of events : $events";
 # echo "log path $log_dir"
 export TRACCC_TEST_DATA_DIR=$datapath
+
+# warmup / test run
+CUDA_VISIBLE_DEVICES=$gpu_id ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/ --events=$events --input-binary &
+wait $!
+result = $?
+# end warm up/ test run
+
 Tstart=$(date "+%s.%3N")
 for((i=0;i<num_proc;i++))
 do
@@ -36,7 +43,6 @@ do
 
 	# start job
 	CUDA_VISIBLE_DEVICES=$gpu_id ../build/bin/traccc_seq_example_cuda --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/  --events=$events --input-binary &
-	result=$!
 done
 wait
 Tend=$(date "+%s.%3N")
