@@ -14,6 +14,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Clone
+        run: |
+          git clone https://github.com/Chamodya-ka/traccc.git
+          git checkout ci_mps_scripts
       - name: Configure
         run:
           cmake -S . -B build
