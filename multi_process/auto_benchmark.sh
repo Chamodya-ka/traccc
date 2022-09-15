@@ -43,4 +43,5 @@ do
 		sleep 1
 	done		
 done
+echo "done sucessfully" # testing workflow
 exit $result
