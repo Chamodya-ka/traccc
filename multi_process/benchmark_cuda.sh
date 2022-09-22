@@ -29,6 +29,7 @@ export TRACCC_TEST_DATA_DIR=$datapath
 nvidia-cuda-mps-control -d
 mps_ret=$?
 if [ $mps_ret -ne 0 ]; then
+    echo "Failed to enabled CUDA mps : $mps_ret"
     exit $mps_ret
 fi
 echo "Enabled CUDA mps"
