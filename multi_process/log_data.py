@@ -10,8 +10,7 @@ def append_list_as_row(list_of_elem,file_name="mps_throughput.csv"):
         csv_writer.writerow(list_of_elem)
 
 
-#N,E,TIME=sys.argv[1:4]
-#print(N,E,TIME)
+
 if (sys.argv[6]=='cuda'):
 	append_list_as_row(sys.argv[1:6],"mps_throughput_cuda.csv")
 elif (sys.argv[6]=='cpu'):

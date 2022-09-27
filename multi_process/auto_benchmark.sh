@@ -2,14 +2,14 @@
 
 # run n cuda processes for example n in range 1 -> 32
 # benchmark cuda mps for increments of 10 events per process for example i in range 1 -> 50
-max_proc=2
-max_events=150
-increment=10
-cores=1		# number of cores (sockets)
-threads=1	# number of threads per core 
-gpu=1
-path='../data'
-run_cpu=0
+max_proc=2	# number of processes upper bound
+max_events=150	# maximum number of events per process
+increment=10 	# event steps 
+cores=1		# number of physical cores
+threads=1	# number of threads per physical core 
+gpu=1		# number of gpus
+path='../data'	# data path
+run_cpu=0	# 1-cpu and 0-cuda 
 
 while getopts r:c:t:p:e:g:d: flag;
 do
@@ -43,5 +43,4 @@ do
 		sleep 1
 	done		
 done
-echo "done sucessfully" # testing workflow
 exit $result

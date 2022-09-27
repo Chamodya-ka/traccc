@@ -4,7 +4,7 @@ num_proc=1 	# number of processes expected to run concurrently
 events=1 	# number of event each process will compute	
 cores=1		# number of cores (sockets)
 threads=1	# number of threads per core 
-datapath=""
+datapath=""	# data dir
 while getopts n:e:c:t:p: flag;
 do
     case "${flag}" in

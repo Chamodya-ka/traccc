@@ -4,9 +4,9 @@ num_proc=1 	# number of processes expected to run concurrently
 events=1 	# number of event each process will compute	
 cores=1		# number of cores (sockets)
 threads=1	# number of threads per core 
-datapath=""
-numgpus=1
-# log_dir=""
+datapath=""	# data dir
+numgpus=1	# number of gpus
+
 while getopts n:e:c:t:p:g:l: flag;
 do
     case "${flag}" in
@@ -16,7 +16,6 @@ do
 	t) threads=${OPTARG};;
 	p) datapath=${OPTARG};;
 	g) numgpus=${OPTARG};;
-#	l) log_dir=${OPTARG};;
     esac
 done
 echo "$datapath"
