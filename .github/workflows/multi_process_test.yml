@@ -10,11 +10,12 @@ on:
 
 jobs:
   builds:
-    # name: ${{ matrix.platform.name }}-${{ matrix.build }}
-    runs-on: self-hosted
-
+    runs-on: docker-gpu-nvidia
     steps:
       - uses: actions/checkout@v2
+        with:
+            submodules: true
+            lfs: true
       - name: Configure
         run:
           cmake -S ${GITHUB_WORKSPACE} -B build
@@ -24,11 +25,9 @@ jobs:
       - name: Auto Benchmark Cuda
         run: |
           cd multi_process
-          #for testing purpose
-          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"/media/chamodya/Backup Plus1/WorkSpace/TRACCC/data"
+          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"${GITHUB_WORKSPACE}/data"
       - name: Auto Benchmark CPU
         run: |
           cd multi_process
-          #for testing purpose
-          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r1 -d"/media/chamodya/Backup Plus1/WorkSpace/TRACCC/data"
+          ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r1 -d"${GITHUB_WORKSPACE}/data"
       
