@@ -21,6 +21,15 @@ echo "number of events : $events";
 export TRACCC_TEST_DATA_DIR=$datapath
 Tstart=$(date "+%s.%3N")
 
+#warm up run
+
+../build/bin/traccc_seq_example --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory=tml_full/ttbar_mu200/ --events=$events --input-binary &
+wait $!
+result=$?
+echo "result : $result" 
+
+# end warm up run
+
 for((i=0;i<num_proc;i++))
 do
 	# get processor id
@@ -34,3 +43,4 @@ Tend=$(date "+%s.%3N")
 elapsed=$(echo "scale=3; $Tend - $Tstart" | bc)
 python3 log_data.py $num_proc $events $elapsed $cores $threads cpu
 echo "Elapsed: $elapsed s"
+exit $result
