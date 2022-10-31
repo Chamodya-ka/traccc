@@ -1,0 +1,62 @@
+stages:
+  - build
+  - test
+
+
+build_cuda:
+  tags: [docker]
+  stage: build
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  artifacts:
+    paths: 
+      - build
+  script:
+      - git clone $CLONE_URL src
+      - git -C src checkout $HEAD_SHA
+      - >
+        cmake -S src -B build -GNinja
+        -DCMAKE_BUILD_TYPE=Release
+        -DTRACCC_BUILD_TESTING=ON
+        -DTRACCC_BUILD_CUDA=ON
+      - cmake --build build
+
+
+test_cuda:
+  stage: test
+  tags: [docker-gpu-nvidia]
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  needs: 
+    - build_cuda
+  script:
+    - apt-get update && apt-get install -y git-lfs
+    - git clone $CLONE_URL src
+    - cd src
+    - git checkout $HEAD_SHA
+    - git submodule init 
+    - git clone -n $(git config submodule.data.url) data
+    - git -C data sparse-checkout set cca_test tml_detector
+    - time git -C data reset --hard
+    - cd ..
+    - cd build
+    - nvidia-smi
+    - ctest --output-on-failure -E "^SeedingValidation/CompareWithActsSeedingTests.*"
+
+test_multi_process_cuda:
+  stage: test
+  tags: [docker-gpu-nvidia]
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  needs: 
+    - test_cuda
+  script:
+    - cd $CI_PROJECT_DIR/multi_process
+    - ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r0 -d"$CI_PROJECT_DIR/data"
+
+test_multi_process_cpu:
+  stage: test
+  tags: [docker-gpu-nvidia]
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  needs: 
+    - test_cuda
+  script:
+    - cd $CI_PROJECT_DIR/multi_process
+    - ./auto_benchmark.sh -p1 -t1 -c1 -e1 -g1 -r1 -d"$CI_PROJECT_DIR/data"
