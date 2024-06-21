@@ -1,7 +1,14 @@
 stages:
+  - ci-test
   - build
   - test
 
+test_ci:
+  stage: ci-test
+  tags: [docker-gpu-nvidia]
+  image: ghcr.io/acts-project/ubuntu2004_cuda:v30
+  script:
+    - echo "AVAILABLE"
 
 build_cuda:
   tags: [docker]
